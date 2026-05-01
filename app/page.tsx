@@ -252,12 +252,12 @@ export default function ShreeVinayakDesign() {
               <span style={{ borderBottom: "2px solid #c8a84b", paddingBottom: "2px" }}>in India</span>
             </h2>
             <p className="text-gray-600 leading-relaxed mb-4">
-              Choose us for your exhibition stand needs and experience unmatched expertise and innovative designs that captivate your audience. Shree Vinayak Design is an award-winning 360° exhibition stall design company where <strong>'Value for Money'</strong> and <strong>'High ROI'</strong> is fundamental to all our services.
+              Choose us for your exhibition stand needs and experience unmatched expertise and innovative designs that captivate your audience. Shree Vinayak Design is an award-winning 360° exhibition stall design company where <strong>Value for Money</strong> and <strong>High ROI</strong> is fundamental to all our services.
             </p>
             {readMore && (
               <div className="text-gray-600 leading-relaxed mb-4 space-y-4">
                 <p>We have a prolific track record of over 2 decades creating 2700+ stall designs and serving major Indian brands across diverse industries. Our flagship service offers one-point-contact operations for pan-India and worldwide trade fairs.</p>
-                <p>At Shree Vinayak Design, we complement you like your 'Trade Fair Partner'. We begin with the fundamentals — assisting you with stall design suggestions relevant to your brand and industry — then decode your audience to create an exhibition stall that stands apart.</p>
+                <p>At Shree Vinayak Design, we complement you like your Trade Fair Partner. We begin with the fundamentals — assisting you with stall design suggestions relevant to your brand and industry — then decode your audience to create an exhibition stall that stands apart.</p>
               </div>
             )}
             <button onClick={() => setReadMore(!readMore)} className="text-amber-600 font-semibold text-sm hover:underline">{readMore ? "Show Less ↑" : "Read More ↓"}</button>
@@ -279,7 +279,7 @@ export default function ShreeVinayakDesign() {
         <div className="max-w-7xl mx-auto px-6 text-center mb-12">
           <p className="section-tag mb-2">Esteemed Clients</p>
           <h2 className="font-display text-4xl font-bold text-gray-900 mb-3">Trusted by Industry-Leading Clients</h2>
-          <p className="text-gray-500 text-sm max-w-xl mx-auto">500+ brands across industries have trusted Shree Vinayak Design to represent them on the world's biggest exhibition stages.</p>
+          <p className="text-gray-500 text-sm max-w-xl mx-auto">500+ brands across industries have trusted Shree Vinayak Design to represent them on the world biggest exhibition stages.</p>
         </div>
 
         {/* Marquee */}
@@ -319,7 +319,7 @@ export default function ShreeVinayakDesign() {
           <div className="text-center mb-8">
             <p className="section-tag mb-2">Exhibition Stall Design that Impress</p>
             <h2 className="font-display text-4xl font-bold text-white mb-3">Creative Exhibition Stall Highlights</h2>
-            <p className="text-gray-400 text-sm max-w-lg mx-auto">From Mumbai to Germany, our stalls have made lasting impressions at the world's most prestigious trade fairs.</p>
+            <p className="text-gray-400 text-sm max-w-lg mx-auto">From Mumbai to Germany, our stalls have made lasting impressions at the worlds most prestigious trade fairs.</p>
           </div>
 
           {/* Filter */}
@@ -364,7 +364,7 @@ export default function ShreeVinayakDesign() {
                 <span className="text-amber-400 text-xs font-bold tracking-widest uppercase">Mumbai, India</span>
                 <h3 className="font-display font-bold text-white text-2xl mt-1">Anuga — Premium Food & Beverage Exhibition</h3>
               </div>
-              <p className="hl-desc text-gray-300 text-sm max-w-sm hidden md:block">A landmark 108 SQM + mezzanine stall showcasing culinary innovation at India's most prestigious food trade fair.</p>
+              <p className="hl-desc text-gray-300 text-sm max-w-sm hidden md:block">A landmark 108 SQM + mezzanine stall showcasing culinary innovation at Indias most prestigious food trade fair.</p>
             </div>
           </div>
         </div>
@@ -646,10 +646,10 @@ export default function ShreeVinayakDesign() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative">
             <button className="absolute top-4 right-5 text-gray-400 hover:text-gray-900 text-2xl" onClick={() => setEnquiryOpen(false)}>✕</button>
             <h3 className="font-display text-2xl font-bold text-gray-900 mb-2">Submit Your Enquiry</h3>
-            <p className="text-gray-500 text-sm mb-6">Fill in the details below and we'll get back to you promptly.</p>
+            <p className="text-gray-500 text-sm mb-6">Fill in the details below and we will get back to you promptly.</p>
             <div className="space-y-4">
               {[["name", "Your Name", "text"], ["email", "Email Address", "email"], ["phone", "Phone Number", "tel"]].map(([field, label, type]) => (
-                <input key={field} type={type} placeholder={label} value={form[field]}
+                <input key={field} type={type} placeholder={label} value={form[field as keyof typeof form]}
                   onChange={e => setForm({ ...form, [field]: e.target.value })}
                   className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-amber-400" />
               ))}
