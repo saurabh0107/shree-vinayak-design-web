@@ -105,6 +105,8 @@ type Client = {
   logo: string;
   bg: string;
   initials: string;
+  fallbackColor?: string;
+  fallbackText?: string;
 };
 
 function ClientLogo({ client }: { client: Client }) {
@@ -147,6 +149,30 @@ export default function ShreeVinayakDesign() {
   const filteredPortfolio = activeFilter === "All" ? PORTFOLIO_ITEMS : PORTFOLIO_ITEMS.filter(p => p.tag === activeFilter);
   const filteredHighlights = highlightFilter === "All" ? HIGHLIGHTS : HIGHLIGHTS.filter(h => h.tag === highlightFilter);
 
+
+  function LogoTile({ client }: { client: Client }) {
+  const [imgOk, setImgOk] = useState(true);
+  return (
+    <div className="flex items-center justify-center w-full" style={{ minHeight: "72px" }}>
+      {imgOk ? (
+        <img
+          src={client.logo}
+          alt={client.name}
+          onError={() => setImgOk(false)}
+          className="object-contain transition-all duration-300 hover:scale-105"
+          style={{ maxHeight: "56px", maxWidth: "160px" }}
+        />
+      ) : (
+        <span className="font-bold text-lg tracking-tight whitespace-pre-line text-center leading-tight"
+          style={{ color: client.fallbackColor }}>
+          {client.fallbackText}
+        </span>
+      )}
+    </div>
+  );
+}
+
+  
   return (
     <div className="font-sans bg-white text-gray-900 overflow-x-hidden">
       <style>{`
@@ -275,21 +301,63 @@ export default function ShreeVinayakDesign() {
       {/* ═══════════════════════════════════════
           CLIENTS — with images + marquee
       ═══════════════════════════════════════ */}
-      <section className="bg-gray-50 py-20">
-        <div className="max-w-7xl mx-auto px-6 text-center mb-12">
-          <p className="section-tag mb-2">Esteemed Clients</p>
-          <h2 className="font-display text-4xl font-bold text-gray-900 mb-3">Trusted by Industry-Leading Clients</h2>
-          <p className="text-gray-500 text-sm max-w-xl mx-auto">500+ brands across industries have trusted Shree Vinayak Design to represent them on the world biggest exhibition stages.</p>
+     <section className="bg-gray-50 py-20 relative overflow-hidden">
+        {/* Large ghost watermark "ESTEEMED" — matches site's dark/neutral palette */}
+        <div className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none select-none" style={{ paddingTop: "8px" }}>
+          <span className="font-display font-black uppercase text-center leading-none"
+            style={{
+              fontSize: "clamp(70px, 14vw, 150px)",
+              letterSpacing: "0.1em",
+              color: "rgba(100,100,100,0.07)",
+              lineHeight: 1,
+            }}>
+            ESTEEMED
+          </span>
         </div>
-
-        {/* Marquee */}
-        <div className="marquee-outer mb-6">
-          <div className="marquee-track px-4">
-            {[...CLIENTS, ...CLIENTS].map((c, i) => <ClientLogo key={i} client={c} />)}
+ 
+        <div className="relative z-10 max-w-5xl mx-auto px-6">
+          {/* "CLIENTS" gold heading */}
+          <div className="text-center mb-4" style={{ paddingTop: "40px" }}>
+            <p className="section-tag mb-3">Esteemed Clients</p>
+            <h2 className="font-display font-black uppercase"
+              style={{ fontSize: "clamp(30px, 5vw, 52px)", color: "#c8a84b", letterSpacing: "0.2em", lineHeight: 1 }}>
+              CLIENTS
+            </h2>
+          </div>
+          <p className="text-center font-semibold text-gray-700 mb-14" style={{ fontSize: "15px" }}>
+            Trusted by Industry-Leading Clients
+          </p>
+ 
+          {/* Row 1 — 5 logos */}
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-12 items-center justify-items-center mb-12">
+            {[
+              { name: "Welspun Living",  logo: "https://logo.clearbit.com/welspunliving.com",  fallbackText: "Welspun Living",  fallbackColor: "#1a2d8b", bg: "", initials: "" },
+              { name: "Ador",            logo: "https://logo.clearbit.com/adorwelding.com",     fallbackText: "ador",            fallbackColor: "#d93311", bg: "", initials: "" },
+              { name: "DuPont",          logo: "https://logo.clearbit.com/dupont.com",           fallbackText: "◄DUPONT►",        fallbackColor: "#cc0000", bg: "", initials: "" },
+              { name: "L&T",             logo: "https://logo.clearbit.com/larsentoubro.com",     fallbackText: "L&T",             fallbackColor: "#005ea8", bg: "", initials: "" },
+              { name: "Godrej",          logo: "https://logo.clearbit.com/godrej.com",           fallbackText: "Godrej",          fallbackColor: "#8b1a8c", bg: "", initials: "" },
+            ].map((c, i) => <LogoTile key={i} client={c} />)}
+          </div>
+ 
+          {/* Row 2 — 5 logos */}
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-12 items-center justify-items-center mb-16">
+            {[
+              { name: "AIS Glass",       logo: "https://logo.clearbit.com/aisglass.com",        fallbackText: "◇ AIS ◇",         fallbackColor: "#c0392b", bg: "", initials: "" },
+              { name: "Montanari",       logo: "https://logo.clearbit.com/montanari-group.com", fallbackText: "Montanari Group", fallbackColor: "#444", bg: "", initials: "" },
+              { name: "Johnson Lifts",   logo: "https://logo.clearbit.com/johnsonlifts.com",    fallbackText: "Johnson Lifts",   fallbackColor: "#005b99", bg: "", initials: "" },
+              { name: "Lafit",           logo: "https://logo.clearbit.com/lafit.in",             fallbackText: "LAFIT",           fallbackColor: "#4a9e20", bg: "", initials: "" },
+              { name: "Cathay Cargo",    logo: "https://logo.clearbit.com/cathaycargo.com",     fallbackText: "CATHAY CARGO",    fallbackColor: "#005f6a", bg: "", initials: "" },
+            ].map((c, i) => <LogoTile key={i} client ={c} />)}
+          </div>
+ 
+          {/* Pill CTA — gold matches site theme */}
+          <div className="text-center">
+            <a href="#" className="bg-gold text-white font-semibold px-12 py-3.5 hover:bg-amber-600 transition-colors inline-block"
+              style={{ borderRadius: "999px", fontSize: "14px" }}>
+              View More
+            </a>
           </div>
         </div>
-
-        
       </section>
 
       {/* SERVICES */}
