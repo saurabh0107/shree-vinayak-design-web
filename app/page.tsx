@@ -1,98 +1,208 @@
 "use client";
-import { useState, useEffect } from "react";
 
-const NAV_LINKS = [
-  { label: "Home", href: "#home" },
-  { label: "Expos", href: "#expos" },
-  { label: "Portfolio", href: "#portfolio" },
-  { label: "About", href: "#about" },
-  { label: "Awards", href: "#awards" },
-  { label: "Contact", href: "#contact" },
-  { label: "Blogs", href: "#blogs" },
-];
+/* eslint-disable @next/next/no-img-element, react/no-unescaped-entities */
+import { useState, useEffect, type ChangeEvent, type MouseEvent } from "react";
+import {
+  HashRouter as Router,
+  Routes,
+  Route,
+  Link,
+  NavLink,
+  useLocation,
+} from "react-router-dom";
 
-const STATS = [
-  { value: "27+", label: "Years of Experience" },
-  { value: "2700+", label: "Stalls Executed" },
-  { value: "500+", label: "Satisfied Clients" },
-  { value: "94%", label: "Consistent Clientele" },
-  { value: "20+", label: "Awards Won" },
-];
+/* ─────────────────────────────────────────
+   GLOBAL STYLES
+───────────────────────────────────────── */
+const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Outfit', sans-serif; color: #1a1a1a; background: #fff; }
+  .fd { font-family: 'Playfair Display', serif; }
+  .gold { color: #c8a84b; }
+  .bg-gold { background: #c8a84b; }
+  a { text-decoration: none; color: inherit; }
+  img { display: block; max-width: 100%; }
+  .page-banner {
+    background: #111;
+    padding: 120px 0 56px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-banner::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(200,168,75,0.15) 0%, transparent 60%);
+  }
+  .page-banner h1 { font-family:'Playfair Display',serif; font-size: clamp(32px,5vw,52px); color:#fff; position:relative; z-index:1; }
+  .page-banner .breadcrumb { position:relative; z-index:1; margin-top:10px; font-size:13px; color:#aaa; }
+  .page-banner .breadcrumb a { color:#c8a84b; }
+  .section-label { font-size:11px; letter-spacing:0.25em; text-transform:uppercase; color:#c8a84b; font-weight:700; }
+  .divider { width:48px; height:2px; background:#c8a84b; margin:14px auto; }
+  .divider.left { margin:14px 0; }
+  .btn-gold { display:inline-block; background:#c8a84b; color:#fff; font-weight:600; font-size:13px; padding:12px 30px; border-radius:4px; transition:background 0.2s; cursor:pointer; border:none; }
+  .btn-gold:hover { background:#b8942e; }
+  .btn-outline { display:inline-block; border:2px solid #c8a84b; color:#c8a84b; font-weight:600; font-size:13px; padding:10px 28px; border-radius:4px; transition:all 0.2s; }
+  .btn-outline:hover { background:#c8a84b; color:#fff; }
+  .card { background:#fff; border:1px solid #eee; border-radius:8px; overflow:hidden; transition:box-shadow 0.25s, transform 0.25s; }
+  .card:hover { box-shadow:0 12px 32px rgba(0,0,0,0.10); transform:translateY(-4px); }
+  .section { padding: 80px 0; }
+  .section.gray { background:#f8f8f8; }
+  .section.dark { background:#111; }
+  .container { max-width:1200px; margin:0 auto; padding:0 24px; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; }
+  @media(max-width:900px){
+    .grid-2{grid-template-columns:1fr;}
+    .grid-3{grid-template-columns:1fr 1fr;}
+    .grid-4{grid-template-columns:1fr 1fr;}
+  }
+  @media(max-width:560px){
+    .grid-3{grid-template-columns:1fr;}
+    .grid-4{grid-template-columns:1fr;}
+    .section{padding:56px 0;}
+  }
+  /* Top info bar */
+  .topbar { background:#111; border-bottom:1px solid rgba(255,255,255,0.08); padding:8px 0; }
+  .topbar-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; }
+  .topbar a,.topbar span { font-size:12px; color:#ccc; display:inline-flex; align-items:center; gap:6px; }
+  .topbar a:hover { color:#c8a84b; }
+  .topbar-right { display:flex; gap:20px; }
+  /* Navbar */
+  .navbar { position:fixed; top:0; left:0; right:0; z-index:100; }
+  .navbar-topbar { background:#111; border-bottom:1px solid rgba(255,255,255,0.1); padding:7px 0; transition:all 0.3s; }
+  .navbar-topbar.hidden { height:0; overflow:hidden; padding:0; opacity:0; }
+  .navbar-main { background:#fff; box-shadow:0 2px 16px rgba(0,0,0,0.10); transition:background 0.3s; }
+  .navbar-main.on-hero { background:rgba(15,15,15,0.55); backdrop-filter:blur(8px); box-shadow:none; }
+  .navbar-main.on-hero .nav-link { color:rgba(255,255,255,0.9); }
+  .navbar-main.on-hero .nav-logo-text { color:#fff; }
+  .navbar-main.on-hero .hamburger span { background:#fff; }
+  .nav-inner { display:flex; align-items:center; justify-content:space-between; height:64px; }
+  .nav-links { display:flex; align-items:center; gap:28px; }
+  .nav-link { font-size:13.5px; font-weight:500; transition:color 0.2s; color:#222; }
+  .nav-link:hover,.nav-link.active { color:#c8a84b !important; }
+  .nav-cta { background:#c8a84b; color:#fff !important; padding:8px 20px; border-radius:4px; font-weight:600; font-size:13px; }
+  .nav-cta:hover { background:#b8942e !important; color:#fff !important; }
+  .hamburger { display:none; background:none; border:none; cursor:pointer; flex-direction:column; gap:5px; }
+  .hamburger span { display:block; width:24px; height:2px; background:#333; transition:background 0.3s; }
+  .navbar-main.on-hero .hamburger span { background:#fff; }
+  @media(max-width:860px){
+    .nav-links{display:none;}
+    .hamburger{display:flex;}
+    .topbar-right{display:none;}
+    .mobile-menu { position:fixed; top:0; left:0; right:0; bottom:0; background:#111; z-index:200; display:flex; flex-direction:column; padding:32px 24px; }
+    .mobile-menu a { color:#fff; font-size:20px; font-family:'Playfair Display',serif; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.08); display:block; }
+    .mobile-menu a:hover { color:#c8a84b; }
+  }
+  /* Hero */
+  .hero { position:relative; min-height:100vh; display:flex; align-items:center; overflow:hidden; padding-top:104px; }
+  .hero img.bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .hero-overlay { position:absolute; inset:0; background:linear-gradient(105deg,rgba(0,0,0,0.68) 0%,rgba(0,0,0,0.3) 55%,rgba(0,0,0,0.05) 100%); }
+  .hero-content { position:relative; z-index:2; max-width:600px; }
+  .hero h1 { font-family:'Playfair Display',serif; font-size:clamp(36px,6vw,68px); color:#fff; line-height:1.12; margin-bottom:18px; }
+  .hero p { color:rgba(255,255,255,0.82); font-size:16px; line-height:1.7; margin-bottom:28px; }
+  .hero-btns { display:flex; gap:14px; flex-wrap:wrap; }
+  /* Stats bar */
+  .stats-bar { background:#111; padding:36px 0; }
+  .stats-grid { display:grid; grid-template-columns:repeat(5,1fr); text-align:center; gap:16px; }
+  @media(max-width:700px){ .stats-grid{grid-template-columns:repeat(2,1fr);} }
+  /* Service card */
+  .svc-card { padding:32px 28px; border:1px solid #ebebeb; border-radius:8px; transition:all 0.25s; background:#fff; }
+  .svc-card:hover { border-color:#c8a84b; box-shadow:0 8px 28px rgba(200,168,75,0.12); transform:translateY(-4px); }
+  .svc-icon { font-size:36px; margin-bottom:16px; }
+  /* Portfolio card */
+  .port-card { position:relative; overflow:hidden; border-radius:8px; cursor:pointer; }
+  .port-card img { width:100%; height:240px; object-fit:cover; transition:transform 0.4s; }
+  .port-card:hover img { transform:scale(1.06); }
+  .port-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 55%); display:flex; flex-direction:column; justify-content:flex-end; padding:20px; }
+  /* FAQ */
+  .faq-item { border:1px solid #eee; border-radius:8px; margin-bottom:10px; overflow:hidden; }
+  .faq-q { width:100%; text-align:left; background:none; border:none; padding:18px 20px; font-size:15px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center; color:#1a1a1a; }
+  .faq-q.open { color:#c8a84b; }
+  .faq-a { padding:0 20px 18px; color:#555; font-size:14px; line-height:1.75; }
+  /* Footer */
+  .footer { background:#111; color:#aaa; padding:64px 0 0; }
+  .footer-grid { display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:40px; margin-bottom:48px; }
+  @media(max-width:860px){ .footer-grid{grid-template-columns:1fr 1fr;} }
+  @media(max-width:480px){ .footer-grid{grid-template-columns:1fr;} }
+  .footer h4 { color:#fff; font-size:13px; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:20px; }
+  .footer a:hover { color:#c8a84b; }
+  .footer-bottom { border-top:1px solid rgba(255,255,255,0.08); padding:20px 0; font-size:12px; }
+  /* Contact form */
+  .form-group { margin-bottom:18px; }
+  .form-group label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:#444; }
+  .form-group input, .form-group textarea, .form-group select {
+    width:100%; padding:12px 14px; border:1px solid #ddd; border-radius:6px; font-size:14px;
+    font-family:'Outfit',sans-serif; outline:none; transition:border 0.2s;
+  }
+  .form-group input:focus,.form-group textarea:focus { border-color:#c8a84b; }
+  /* Info box */
+  .info-box { display:flex; gap:16px; align-items:flex-start; padding:20px; border-radius:8px; background:#f8f8f8; }
+  .info-icon { width:42px; height:42px; border-radius:50%; background:#c8a84b; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; }
+  /* Marquee */
+  .marquee-wrap { overflow:hidden; }
+  .marquee-track { display:flex; gap:48px; animation:marquee 28s linear infinite; width:max-content; }
+  .marquee-track:hover { animation-play-state:paused; }
+  @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  /* Scroll to top */
+  .scroll-top { position:fixed; bottom:24px; right:24px; z-index:99; width:44px; height:44px; border-radius:50%; background:#c8a84b; color:#fff; border:none; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,0.2); }
+`;
 
-const CLIENTS = [
-  { name: "Welspun Living", logo: "/clients/welspun-living.svg", bg: "#003082", initials: "WL" },
-  { name: "Ador Welding", logo: "/clients/ador-welding.svg", bg: "#c00000", initials: "AW" },
-  { name: "Johnson Lifts", logo: "/clients/johnson-lifts.svg", bg: "#1a3c6e", initials: "JL" },
-  { name: "AGC Glass", logo: "/clients/agc-glass.svg", bg: "#0057a8", initials: "AG" },
-  { name: "Cosmoprof", logo: "/clients/cosmoprof.svg", bg: "#111", initials: "CP" },
-  { name: "Plastindia", logo: "/clients/plastindia.svg", bg: "#e84118", initials: "PI" },
-  { name: "Shahi Group", logo: "/clients/shahi-group.svg", bg: "#7b2d8b", initials: "SG" },
-  { name: "MAS Holdings", logo: "/clients/mas-holdings.svg", bg: "#1e7e34", initials: "MH" },
-  { name: "Lafit", logo: "/clients/lafit.svg", bg: "#b8860b", initials: "LF" },
-  { name: "Lion-O-Matic", logo: "/clients/lion-o-matic.svg", bg: "#333", initials: "LM" },
-];
-
+/* ─────────────────────────────────────────
+   DATA
+───────────────────────────────────────── */
 const SERVICES = [
-  { title: "Exhibition Stall Designing and Construction", icon: "🏛️", desc: "Complete design-to-build solutions for world-class exhibition stalls." },
-  { title: "B2B Events", icon: "🤝", desc: "End-to-end event management for impactful business-to-business experiences." },
-  { title: "Office Branding", icon: "🏢", desc: "Transform your workspace into a powerful brand statement." },
-  { title: "Advertising", icon: "📢", desc: "Creative advertising campaigns that amplify your brand voice." },
-  { title: "Digital Communication", icon: "💻", desc: "Cutting-edge digital strategies that connect and convert." },
-  { title: "Retail Design", icon: "🛍️", desc: "Immersive retail environments that drive engagement and sales." },
+  { icon: "🏛️", title: "Exhibition Stall Design & Build", desc: "Complete design-to-build solutions for world-class exhibition stalls — from concept sketches to on-site installation." },
+  { icon: "🤝", title: "B2B Event Management", desc: "End-to-end event management for impactful business-to-business experiences and corporate events." },
+  { icon: "🏢", title: "Office Branding", desc: "Transform your workspace into a powerful brand statement with our interior and signage solutions." },
+  { icon: "📢", title: "Advertising & Print", desc: "Creative advertising campaigns and high-quality print materials that amplify your brand voice." },
+  { icon: "💻", title: "Digital Communication", desc: "Cutting-edge digital strategies including social media, motion graphics, and brand identity design." },
+  { icon: "🛍️", title: "Retail Design", desc: "Immersive retail environments that drive customer engagement, footfall, and sales conversions." },
 ];
 
-const PORTFOLIO_ITEMS = [
-  { title: "Tailored Projects", desc: "Each project is meticulously crafted to meet your specific needs.", tag: "Domestic", img: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80" },
-  { title: "Innovative Creative Solutions", desc: "Break through the mundane with imaginative and original designs.", tag: "International", img: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=600&q=80" },
-  { title: "Experienced Project Managers", desc: "Seasoned professionals dedicated to seamlessly managing your project.", tag: "Mezzanine", img: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=600&q=80" },
-  { title: "Complete Pre & Post Event Support", desc: "From planning to execution and beyond, comprehensive support.", tag: "Domestic", img: "https://images.unsplash.com/photo-1561489401-fc2876ced162?w=600&q=80" },
-  { title: "Flexible Pricing", desc: "Customized pricing plans to fit your budget without compromising quality.", tag: "International", img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&q=80" },
+const PORTFOLIO = [
+  { title: "Acetech 2024", tag: "Domestic", img: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80" },
+  { title: "Bharat Tex", tag: "Domestic", img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&q=80" },
+  { title: "Schweissen — Germany", tag: "International", img: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=600&q=80" },
+  { title: "Cosmoprof India", tag: "Domestic", img: "https://images.unsplash.com/photo-1487017159836-4e23ece2e4cf?w=600&q=80" },
+  { title: "TISE — Las Vegas", tag: "International", img: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&q=80" },
+  { title: "Plastindia", tag: "Mezzanine", img: "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=600&q=80" },
 ];
 
-const HIGHLIGHTS = [
-  { expo: "Acetech", location: "India", size: "250 SQM", img: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80", desc: "India's largest construction trade fair — bold 2-storey mezzanine stall with interactive product zones.", tag: "Domestic" },
-  { expo: "Bharat Tex", location: "India", size: "180 SQM", img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&q=80", desc: "Premium textile exhibition showcasing fabric innovations with a luxurious open-plan display.", tag: "Domestic" },
-  { expo: "Smart Lift & Mobility", location: "India", size: "120 SQM", img: "https://images.unsplash.com/photo-1561489401-fc2876ced162?w=600&q=80", desc: "Dynamic stall featuring live lift demonstrations and cutting-edge mobility solutions.", tag: "Domestic" },
-  { expo: "Aahar", location: "India", size: "96 SQM", img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80", desc: "India's premier food & hospitality trade fair — immersive tasting zones and gourmet displays.", tag: "Domestic" },
-  { expo: "Schweissen & Schneiden", location: "Germany", size: "210 SQM", img: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=600&q=80", desc: "World's leading trade fair for joining, cutting & surfacing — sleek European industrial aesthetic.", tag: "International" },
-  { expo: "Cosmoprof", location: "India", size: "108 SQM", img: "https://images.unsplash.com/photo-1487017159836-4e23ece2e4cf?w=600&q=80", desc: "Professional beauty trade show — glamorous, high-impact brand storytelling stall design.", tag: "Domestic" },
-  { expo: "Plastindia", location: "India", size: "144 SQM", img: "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=600&q=80", desc: "South Asia's largest plastics exhibition — modular design with live machine demonstrations.", tag: "Domestic" },
-  { expo: "TISE", location: "USA", size: "90 SQM", img: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&q=80", desc: "The International Surface Event — sophisticated flooring & surface design stall in Las Vegas.", tag: "International" },
-];
-
-const REVIEWS = [
-  { name: "Nishant Shah", date: "08 Apr 2025", text: "We have taken Shree Vinayak Design's service for stall designing and construction in the US. We've been participating in exhibitions in the US for more than 15 years and their service has been hands on. Would definitely recommend them.", rating: 5 },
-  { name: "Amit Joshi", date: "25 Jul 2024", text: "Working with Shree Vinayak Design was fantastic. Their creative and professional team listened to our vision and crafted a stunning exhibition booth. We received many compliments from attendees.", rating: 5 },
-  { name: "Hannan Shaikh", date: "18 Jul 2024", text: "We were very happy with Shree Vinayak Design for our commercial project. Their team was responsive, professional, and did excellent work. They met our specific needs and handled any problems well.", rating: 5 },
-  { name: "Aryan A", date: "28 Jun 2024", text: "We've worked with several exhibition design companies, but Shree Vinayak Design is truly exceptional. They brought our vision to life with a unique functional booth that received great feedback.", rating: 5 },
-  { name: "Ankita Shrivastava", date: "15 Jun 2023", text: "I can't thank the Shree Vinayak Design team enough for their work on our last exhibition. Their bespoke designs captured our brand essence perfectly and drew a crowd.", rating: 5 },
-  { name: "Manish Pathak", date: "15 Jun 2023", text: "Exhibitions are about making an impact and Shree Vinayak Design understands this better than anyone. Their stalls are always the crowd-puller, with designs that are visually appealing and strategic.", rating: 5 },
+const CLIENTS_ROW1 = [
+  { name: "Welspun Living", logo: "https://logo.clearbit.com/welspunliving.com" },
+  { name: "Ador", logo: "https://logo.clearbit.com/adorwelding.com" },
+  { name: "DuPont", logo: "https://logo.clearbit.com/dupont.com" },
+  { name: "L&T", logo: "https://logo.clearbit.com/larsentoubro.com" },
+  { name: "Godrej", logo: "https://logo.clearbit.com/godrej.com" },
+  { name: "AIS Glass", logo: "https://logo.clearbit.com/aisglass.com" },
+  { name: "Johnson Lifts", logo: "https://logo.clearbit.com/johnsonlifts.com" },
 ];
 
 const FAQS = [
-  { q: "Do exhibition stall designers design customized stalls?", a: "Yes, we design fully customized exhibition stalls as per your vision and brand requirement. Every detail — from layout to lighting — is tailored specifically for you. Contact us at +91-9999441619 or shreevinayakdesigns@gmail.com for more details.", icon: "🎨" },
-  { q: "Do exhibition stall designers in Mumbai provide design samples?", a: "Absolutely! Shree Vinayak Design provides detailed 3D rendered design samples before fabrication begins. Our comprehensive team support ensures your vision is translated perfectly into reality.", icon: "📐" },
-  { q: "What is the cost of exhibition stalls in Mumbai?", a: "Stall costs vary depending on size, design complexity, material choices, and exhibition location. We offer flexible pricing plans to suit every budget. Contact us on +91-9999441619 for a custom quote.", icon: "💰" },
-  { q: "Will the exhibition stall designers pack the stall after the exhibition?", a: "Yes! Shree Vinayak Design offers end-to-end services including post-event dismantling, packing, logistics, and storage. We take care of everything so you can focus on your business.", icon: "📦" },
-  { q: "What technology do exhibition stall designers in India use?", a: "We use cutting-edge design software including 3DS Max, AutoCAD, and advanced rendering tools for photorealistic 3D walkthroughs. On the fabrication side, we use CNC routing, LED lighting systems, and premium materials.", icon: "⚙️" },
-  { q: "Do exhibition stall designers provide 3D Design?", a: "Yes, we provide stunning photorealistic 3D designs so you can visualize your stall before a single nail is hammered. Our 3D walkthroughs let you explore every corner of your stall virtually.", icon: "🖥️" },
-  { q: "How do exhibition stall designers design your booth?", a: "Our process: Discovery call → Brand concept & mood board → 3D design & revisions → Design approval → Fabrication & quality check → Installation at venue → Post-event dismantling & support.", icon: "🗺️" },
+  { q: "Do you design customized exhibition stalls?", a: "Yes, every stall we design is 100% custom — tailored to your brand identity, booth size, industry, and budget. We don't do off-the-shelf." },
+  { q: "What is the typical timeline from design to installation?", a: "For standard stalls, the process takes 3–5 weeks from design approval to installation. Larger or international projects are planned 6–10 weeks in advance." },
+  { q: "Do you provide 3D designs before fabrication?", a: "Absolutely. We provide photorealistic 3D renders so you can visualize every detail before a single piece is fabricated. Revisions are included." },
+  { q: "Do you handle post-event dismantling and logistics?", a: "Yes. We offer complete end-to-end services including on-site installation, live supervision, post-event dismantling, packing, and transport." },
+  { q: "Can you execute international exhibition projects?", a: "Yes — we have successfully executed projects in Germany, USA, UAE, and multiple Asian markets. We handle all logistics, travel, and coordination." },
 ];
 
-const BLOGS = [
-  { title: "Factors That Affect Exhibition Booth Pricing in India", date: "January 16, 2026", img: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80", tag: "Exhibition" },
-  { title: "Custom vs Modular Exhibition Booths – Which is better?", date: "December 16, 2025", img: "https://images.unsplash.com/photo-1459767129954-1b1c1f9b9ace?w=400&q=80", tag: "Booth Design" },
-  { title: "Creative Expo Stand Designers That Help MNCs Dominate Global Trade Shows", date: "November 27, 2025", img: "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=400&q=80", tag: "Expo" },
-  { title: "Why Experienced Stall Designers Are a Game-Changer for MNCs", date: "November 18, 2025", img: "https://images.unsplash.com/photo-1531058020387-3be344556be6?w=400&q=80", tag: "Trade Show" },
-  { title: "Trade Fair Booth Design Ideas That Inspire and Engage Global", date: "November 5, 2025", img: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&q=80", tag: "Trade Fairs" },
-  { title: "How Exhibition Booth Design Company Elevates Your Global Brand Identity", date: "October 30, 2025", img: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400&q=80", tag: "Exhibition Stand Design" },
+const REVIEWS = [
+  { name: "Nishant Shah", date: "Apr 2025", text: "Outstanding service for our US exhibition stall. 15+ years of working together — they never disappoint.", rating: 5 },
+  { name: "Amit Joshi", date: "Jul 2024", text: "Their team listened to our vision and crafted a stunning booth. We received constant compliments from attendees.", rating: 5 },
+  { name: "Aryan A", date: "Jun 2024", text: "Truly exceptional. They brought our vision to life with a unique design that stood out from every other stall.", rating: 5 },
 ];
 
-function StarRating({ count = 5 }: { count?: number }) {
+/* ─────────────────────────────────────────
+   SHARED COMPONENTS
+───────────────────────────────────────── */
+function Stars({ count = 5 }) {
   return (
-    <div className="flex gap-0.5">
+    <div style={{ display: "flex", gap: "2px" }}>
       {Array.from({ length: count }).map((_, i) => (
-        <svg key={i} className="w-4 h-4 fill-yellow-400" viewBox="0 0 20 20">
+        <svg key={i} width="14" height="14" viewBox="0 0 20 20" fill="#f5a623">
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.175 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.05 2.927z" />
         </svg>
       ))}
@@ -100,444 +210,412 @@ function StarRating({ count = 5 }: { count?: number }) {
   );
 }
 
-type Client = {
-  name: string;
-  logo: string;
-  bg: string;
-  initials: string;
-  fallbackColor?: string;
-  fallbackText?: string;
-};
+function ClientLogo({ name, logo }: { name: string; logo: string }) {
+  const [ok, setOk] = useState(true);
+  const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2);
 
-function ClientLogo({ client }: { client: Client }) {
-  const [imgOk, setImgOk] = useState(true);
+  const handleMouseEnter = (e: MouseEvent<HTMLImageElement>) => {
+    e.currentTarget.style.filter = "none";
+    e.currentTarget.style.opacity = "1";
+  };
+
+  const handleMouseLeave = (e: MouseEvent<HTMLImageElement>) => {
+    e.currentTarget.style.filter = "grayscale(100%)";
+    e.currentTarget.style.opacity = "0.7";
+  };
+
   return (
-    <div className="flex-shrink-0 min-w-[160px] h-[88px] bg-white border border-gray-100 rounded-xl shadow-sm flex flex-col items-center justify-center gap-2 px-6 hover:shadow-md transition-shadow group">
-      {imgOk ? (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: "140px", height: "64px" }}>
+      {ok ? (
         <img
-          src={client.logo}
-          alt={client.name}
-          onError={() => setImgOk(false)}
-          className="max-h-14 max-w-full object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
+          src={logo}
+          alt={name}
+          onError={() => setOk(false)}
+          style={{ maxHeight: "44px", maxWidth: "130px", objectFit: "contain", filter: "grayscale(100%)", opacity: 0.7, transition: "all 0.3s" }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         />
       ) : (
-        <div className="w-11 h-11 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: client.bg }}>
-          {client.initials}
-        </div>
+        <span style={{ fontWeight: 700, fontSize: "15px", color: "#888" }}>{initials}</span>
       )}
-      <span className="text-[10px] text-gray-400 font-medium tracking-wide text-center leading-tight">{client.name}</span>
     </div>
   );
 }
 
-export default function ShreeVinayakDesign() {
-  const [menuOpen, setMenuOpen] = useState(false);
+function PageBanner({ title, crumb }: { title: string; crumb: string }) {
+  return (
+    <div className="page-banner" style={{ paddingTop: "110px" }}>
+      <h1>{title}</h1>
+      <div className="breadcrumb">
+        <Link to="/">Home</Link> &nbsp;/&nbsp; {crumb}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   NAVBAR
+───────────────────────────────────────── */
+function Navbar(props: { enquiryOpen: boolean; setEnquiryOpen: (value: boolean) => void }) {
+  const { setEnquiryOpen } = props;
   const [scrolled, setScrolled] = useState(false);
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [highlightFilter, setHighlightFilter] = useState("All");
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  const [readMore, setReadMore] = useState(false);
-  const [enquiryOpen, setEnquiryOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHome = location.pathname === "/";
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    const onScroll = () => setScrolled(window.scrollY > 80);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const filteredPortfolio = activeFilter === "All" ? PORTFOLIO_ITEMS : PORTFOLIO_ITEMS.filter(p => p.tag === activeFilter);
-  const filteredHighlights = highlightFilter === "All" ? HIGHLIGHTS : HIGHLIGHTS.filter(h => h.tag === highlightFilter);
+  const onHero = isHome && !scrolled;
 
+  const links = [
+    { to: "/", label: "Home" },
+    { to: "/about", label: "About" },
+    { to: "/services", label: "Services" },
+    { to: "/portfolio", label: "Portfolio" },
+    { to: "/contact", label: "Contact" },
+  ];
 
-  function LogoTile({ client }: { client: Client }) {
-  const [imgOk, setImgOk] = useState(true);
   return (
-    <div className="flex items-center justify-center w-full" style={{ minHeight: "72px" }}>
-      {imgOk ? (
-        <img
-          src={client.logo}
-          alt={client.name}
-          onError={() => setImgOk(false)}
-          className="object-contain transition-all duration-300 hover:scale-105"
-          style={{ maxHeight: "56px", maxWidth: "160px" }}
-        />
-      ) : (
-        <span className="font-bold text-lg tracking-tight whitespace-pre-line text-center leading-tight"
-          style={{ color: client.fallbackColor }}>
-          {client.fallbackText}
-        </span>
-      )}
-    </div>
-  );
-}
-
-  
-  return (
-    <div className="font-sans bg-white text-gray-900 overflow-x-hidden">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,700&family=Outfit:wght@300;400;500;600&display=swap');
-        *{box-sizing:border-box;}
-        body{font-family:'Outfit',sans-serif;margin:0;}
-        .font-display{font-family:'Playfair Display',serif;}
-        .gold{color:#c8a84b;}
-        .bg-gold{background-color:#c8a84b;}
-        .section-tag{font-size:0.72rem;letter-spacing:0.22em;text-transform:uppercase;color:#c8a84b;font-weight:600;}
-        .hero-overlay{background:linear-gradient(105deg,rgba(0,0,0,0.88) 0%,rgba(0,0,0,0.5) 55%,rgba(0,0,0,0.08) 100%);}
-        .card-hover{transition:transform 0.3s ease,box-shadow 0.3s ease;}
-        .card-hover:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(0,0,0,0.11);}
-        .marquee-outer{overflow:hidden;}
-        .marquee-track{display:flex;gap:1.25rem;animation:marquee 35s linear infinite;width:max-content;}
-        .marquee-track:hover{animation-play-state:paused;}
-        @keyframes marquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
-        html{scroll-behavior:smooth;}
-        /* Highlight card */
-        .hl-card{position:relative;overflow:hidden;border-radius:14px;cursor:pointer;}
-        .hl-card img{transition:transform 0.5s ease;width:100%;height:100%;object-fit:cover;}
-        .hl-card:hover img{transform:scale(1.07);}
-        .hl-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,rgba(0,0,0,0.25) 55%,transparent 100%);}
-        .hl-desc{opacity:0;transition:opacity 0.3s ease;}
-        .hl-card:hover .hl-desc{opacity:1;}
-        /* FAQ */
-        .faq-body{max-height:0;overflow:hidden;transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1),opacity 0.3s ease;opacity:0;}
-        .faq-body.open{max-height:250px;opacity:1;}
-        .faq-plus{transition:transform 0.35s ease;}
-        .faq-plus.open{transform:rotate(45deg);}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
-      `}</style>
-
-      {/* NAVBAR */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white shadow-md" : "bg-transparent"}`}>
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-20">
-          <div className={`font-display font-bold text-2xl tracking-tight ${scrolled ? "text-gray-900" : "text-white"}`}>
-            Shree Vinayak <span className="gold">Design</span>
+    <>
+      <nav className="navbar">
+        {/* TOP INFO BAR — always dark */}
+        <div className={`navbar-topbar${scrolled ? " hidden" : ""}`}>
+          <div className="container">
+            <div className="topbar-inner">
+              <span style={{ fontSize: "12px", color: "#bbb" }}>
+                🏆 Award-Winning Exhibition Stall Design & Fabrication Company
+              </span>
+              <div className="topbar-right">
+                <a href="tel:+919999441619" style={{ fontSize: "12px", color: "#ccc", display: "flex", alignItems: "center", gap: "5px" }}>
+                  📞 <span>+91-9999441619 / +91-9911619759</span>
+                </a>
+                <a href="mailto:shreevinayakdesigns@gmail.com" style={{ fontSize: "12px", color: "#ccc", display: "flex", alignItems: "center", gap: "5px" }}>
+                  ✉️ <span>shreevinayakdesigns@gmail.com</span>
+                </a>
+              </div>
+            </div>
           </div>
-          <div className="hidden lg:flex items-center gap-7">
-            {NAV_LINKS.map(l => (
-              <a key={l.label} href={l.href} className={`text-sm font-medium hover:text-amber-500 transition-colors ${scrolled ? "text-gray-700" : "text-gray-200"}`}>{l.label}</a>
-            ))}
-            <a href="tel:+918879636752" className={`text-sm font-semibold ${scrolled ? "text-gray-800" : "text-white"}`}>+91 88796 36752</a>
-            <button onClick={() => setEnquiryOpen(true)} className="bg-gold text-white px-5 py-2 text-sm font-semibold rounded hover:bg-amber-600 transition-colors">Enquire Now</button>
+        </div>
+
+        {/* MAIN NAV BAR */}
+        <div className={`navbar-main${onHero ? " on-hero" : ""}`}>
+          <div className="container">
+            <div className="nav-inner">
+              {/* Logo */}
+              <Link to="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
+                <div style={{
+                  width: "38px", height: "38px", background: "#c8a84b", borderRadius: "6px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#fff", fontWeight: 900, fontSize: "16px", fontFamily: "'Playfair Display',serif", flexShrink: 0
+                }}>S</div>
+                <span className="nav-logo-text fd" style={{ fontSize: "19px", fontWeight: 700, lineHeight: 1.2, color: onHero ? "#fff" : "#111" }}>
+                  Shree Vinayak<br />
+                  <span style={{ color: "#c8a84b", fontSize: "13px", fontWeight: 600, fontFamily: "'Outfit',sans-serif", letterSpacing: "0.06em", textTransform: "uppercase" }}>Designs</span>
+                </span>
+              </Link>
+
+              {/* Desktop links */}
+              <div className="nav-links">
+                {links.map(l => (
+                  <NavLink key={l.to} to={l.to} end
+                    className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+                    style={{ color: onHero ? "rgba(255,255,255,0.9)" : "#222" }}>
+                    {l.label}
+                  </NavLink>
+                ))}
+                <a href="tel:+919999441619"
+                  style={{ fontSize: "13px", fontWeight: 600, color: onHero ? "rgba(255,255,255,0.85)" : "#555", display: "flex", alignItems: "center", gap: "5px" }}>
+                  📞 +91-9999441619 / +91-9911619759
+                </a>
+                <button className="nav-cta" onClick={() => setEnquiryOpen(true)}>Get Enquiry</button>
+              </div>
+
+              {/* Hamburger */}
+              <button className="hamburger" onClick={() => setMenuOpen(true)} aria-label="Menu">
+                <span /><span /><span />
+              </button>
+            </div>
           </div>
-          <button className={`lg:hidden text-2xl ${scrolled ? "text-gray-900" : "text-white"}`} onClick={() => setMenuOpen(true)}>☰</button>
         </div>
       </nav>
 
       {/* MOBILE MENU */}
       {menuOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col p-8">
-          <button className="self-end text-white text-3xl mb-8" onClick={() => setMenuOpen(false)}>✕</button>
-          <div className="text-amber-400 font-semibold text-sm mb-6">+91 88796 36752</div>
-          {NAV_LINKS.map(l => <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)} className="text-white text-2xl font-display font-semibold py-3 border-b border-white/10 hover:text-amber-400 transition-colors">{l.label}</a>)}
-          <button onClick={() => { setMenuOpen(false); setEnquiryOpen(true); }} className="mt-8 bg-gold text-white px-6 py-3 font-semibold rounded">Enquire Now</button>
+        <div className="mobile-menu">
+          <button onClick={() => setMenuOpen(false)}
+            style={{ alignSelf: "flex-end", background: "none", border: "none", color: "#fff", fontSize: "28px", cursor: "pointer", marginBottom: "16px" }}>✕</button>
+          <div style={{ marginBottom: "20px" }}>
+            <div style={{ fontSize: "18px", fontWeight: 700, color: "#fff", fontFamily: "'Playfair Display',serif" }}>
+              Shree Vinayak <span style={{ color: "#c8a84b" }}>Designs</span>
+            </div>
+          </div>
+          {links.map(l => (
+            <NavLink key={l.to} to={l.to} end onClick={() => setMenuOpen(false)}>{l.label}</NavLink>
+          ))}
+          <div style={{ marginTop: "24px", padding: "16px 0", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+            <a href="tel:+919999441619" style={{ color: "#c8a84b", fontSize: "14px", display: "block", marginBottom: "8px" }}>📞 +91-9999441619 / +91-9911619759</a>
+            <a href="mailto:shreevinayakdesigns@gmail.com" style={{ color: "#aaa", fontSize: "13px", display: "block", marginBottom: "20px" }}>✉️ shreevinayakdesigns@gmail.com</a>
+          </div>
+          <button className="btn-gold" onClick={() => { setMenuOpen(false); setEnquiryOpen(true); }}>Get Enquiry</button>
         </div>
       )}
+    </>
+  );
+}
 
-      {/* HERO */}
-      <section id="home" className="relative h-screen min-h-[620px] flex items-center overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1800&q=85" alt="Exhibition" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 hero-overlay" />
-        <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
-          <div className="max-w-2xl" style={{ animation: "fadeUp 0.9s ease forwards" }}>
-            <p className="section-tag mb-4">EXHIBIT WITH IMPACT</p>
-            <h1 className="font-display text-5xl md:text-7xl font-bold text-white leading-tight mb-6">Exhibitions<br />Meet <span className="gold">Innovation</span></h1>
-            <h2 className="text-xl md:text-2xl text-gray-200 font-light mb-8">Exhibition Stall Designer in India</h2>
-            <div className="flex gap-4 flex-wrap">
-              <button onClick={() => setEnquiryOpen(true)} className="bg-gold text-white px-8 py-3.5 font-semibold rounded hover:bg-amber-600 transition-colors text-sm">Get a Quote</button>
-              <a href="#portfolio" className="border border-white text-white px-8 py-3.5 font-semibold rounded hover:bg-white hover:text-gray-900 transition-colors text-sm">View Portfolio</a>
+/* ─────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────── */
+function Footer() {
+  return (
+    <footer className="footer">
+      <div className="container">
+        <div className="footer-grid">
+          <div>
+            <div className="fd" style={{ fontSize: "22px", fontWeight: 700, color: "#fff", marginBottom: "14px" }}>
+              Shree Vinayak <span className="gold">Designs</span>
+            </div>
+            <p style={{ fontSize: "13px", lineHeight: 1.8, marginBottom: "18px" }}>
+              Award-winning 360° exhibition stall design company serving brands across India and globally since 1998.
+            </p>
+            <div style={{ display: "flex", gap: "10px" }}>
+              {["FB", "IG", "LI", "YT"].map(s => (
+                <a key={s} href="#" style={{ width: "34px", height: "34px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", color: "#aaa", fontWeight: 600 }}>{s}</a>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h4>Quick Links</h4>
+            {[["Home", "/"], ["About", "/about"], ["Services", "/services"], ["Portfolio", "/portfolio"], ["Contact", "/contact"]].map(([l, h]) => (
+              <div key={l} style={{ marginBottom: "8px" }}><Link to={h} style={{ fontSize: "13px", color: "#aaa" }}>→ {l}</Link></div>
+            ))}
+          </div>
+          <div>
+            <h4>Services</h4>
+            {["Exhibition Stall Design", "Stall Fabrication", "B2B Events", "Office Branding", "Retail Design", "Digital Marketing"].map(s => (
+              <div key={s} style={{ marginBottom: "8px" }}><a href="#" style={{ fontSize: "13px", color: "#aaa" }}>→ {s}</a></div>
+            ))}
+          </div>
+          <div>
+            <h4>Contact Us</h4>
+            <div style={{ fontSize: "13px", lineHeight: 2 }}>
+              <div>📞 <a href="tel:+919999441619" style={{ color: "#aaa" }}>+91-9999441619</a></div>
+              <div>📞 <a href="tel:+919911619759" style={{ color: "#aaa" }}>+91-9911619759</a></div>
+              <div>✉️ <a href="mailto:shreevinayakdesigns@gmail.com" style={{ color: "#aaa" }}>shreevinayakdesigns@gmail.com</a></div>
+              <div style={{ marginTop: "8px", color: "#888", lineHeight: 1.7 }}>
+                1/4886, Street No. 8,<br />
+                Balbir Nagar Extension, Shahdara,<br />
+                Delhi - 110032
+              </div>
             </div>
           </div>
         </div>
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/60 text-xs tracking-widest uppercase">
-          <span>Scroll Down</span>
-          <div className="w-px h-10 bg-white/40 animate-pulse" />
+        <div className="footer-bottom">
+          <div className="container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+            <span>© 2026 Shree Vinayak Designs. All rights reserved.</span>
+            <span>Designed with ♥ in Delhi</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ─────────────────────────────────────────
+   ENQUIRY MODAL
+───────────────────────────────────────── */
+function EnquiryModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  type EnquiryForm = { name: string; email: string; phone: string; message: string };
+  const [form, setForm] = useState<EnquiryForm>({ name: "", email: "", phone: "", message: "" });
+
+  const updateField = (field: keyof EnquiryForm) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+      <div style={{ background: "#fff", borderRadius: "12px", maxWidth: "480px", width: "100%", padding: "36px", position: "relative" }}>
+        <button onClick={onClose} style={{ position: "absolute", top: "16px", right: "20px", background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#999" }}>✕</button>
+        <div className="fd" style={{ fontSize: "22px", fontWeight: 700, marginBottom: "6px" }}>Submit Enquiry</div>
+        <p style={{ fontSize: "13px", color: "#888", marginBottom: "24px" }}>Fill in the details and we&apos;ll get back to you within 24 hours.</p>
+        {([
+          { key: "name", placeholder: "Your Name", type: "text" },
+          { key: "email", placeholder: "Email Address", type: "email" },
+          { key: "phone", placeholder: "Phone Number", type: "tel" },
+        ] as Array<{ key: keyof EnquiryForm; placeholder: string; type: string }>).map(({ key, placeholder, type }) => (
+          <div className="form-group" key={key}>
+            <input type={type} placeholder={placeholder} value={form[key]} onChange={updateField(key)} />
+          </div>
+        ))}
+        <div className="form-group">
+          <textarea placeholder="Your Message" rows={4} value={form.message} onChange={updateField("message")} style={{ resize: "none" }} />
+        </div>
+        <button className="btn-gold" style={{ width: "100%" }} onClick={onClose}>Submit Enquiry</button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   PAGE: HOME
+═══════════════════════════════════════════ */
+function HomePage({ setEnquiryOpen }: { setEnquiryOpen: (value: boolean) => void }) {
+  const [filter, setFilter] = useState("All");
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const filtered = filter === "All" ? PORTFOLIO : PORTFOLIO.filter(p => p.tag === filter);
+
+  return (
+    <>
+      {/* HERO */}
+      <section className="hero">
+        <img className="bg" src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1800&q=90" alt="Exhibition" />
+        <div className="hero-overlay" />
+        <div className="container">
+          <div className="hero-content">
+            <p className="section-label" style={{ color: "#c8a84b", marginBottom: "14px" }}>Exhibition Stall Designer in India</p>
+            <h1>Exhibitions<br />Meet <span className="gold">Innovation</span></h1>
+            <p>Award-winning 360° exhibition stall design & fabrication company with 27+ years of delivering world-class brand experiences across India and globally.</p>
+            <div className="hero-btns">
+              <button className="btn-gold" onClick={() => setEnquiryOpen(true)}>Get a Free Quote</button>
+              <Link to="/portfolio" className="btn-outline" style={{ color: "#fff", borderColor: "rgba(255,255,255,0.6)" }}>View Portfolio</Link>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* STATS */}
-      <section className="bg-gray-950 py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 text-center">
-            {STATS.map(s => (
-              <div key={s.label} className="flex flex-col items-center">
-                <span className="font-display text-4xl md:text-5xl font-bold gold">{s.value}</span>
-                <span className="text-gray-400 text-sm mt-2 font-medium">{s.label}</span>
+      <div className="stats-bar">
+        <div className="container">
+          <div className="stats-grid">
+            {[["27+", "Years Experience"], ["2700+", "Stalls Executed"], ["500+", "Happy Clients"], ["94%", "Repeat Clients"], ["20+", "Awards Won"]].map(([v, l]) => (
+              <div key={l}>
+                <div className="fd gold" style={{ fontSize: "36px", fontWeight: 700 }}>{v}</div>
+                <div style={{ color: "#888", fontSize: "12px", marginTop: "4px" }}>{l}</div>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* WHY CHOOSE US */}
-      <section id="about" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <p className="section-tag mb-3">Why Choose Us?</p>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-              Exhibition Stall Designer{" "}
-              <span style={{ borderBottom: "2px solid #c8a84b", paddingBottom: "2px" }}>in India</span>
-            </h2>
-            <p className="text-gray-600 leading-relaxed mb-4">
-              Choose us for your exhibition stand needs and experience unmatched expertise and innovative designs that captivate your audience. Shree Vinayak Design is an award-winning 360° exhibition stall design company where <strong>Value for Money</strong> and <strong>High ROI</strong> is fundamental to all our services.
-            </p>
-            {readMore && (
-              <div className="text-gray-600 leading-relaxed mb-4 space-y-4">
-                <p>We have a prolific track record of over 2 decades creating 2700+ stall designs and serving major Indian brands across diverse industries. Our flagship service offers one-point-contact operations for pan-India and worldwide trade fairs.</p>
-                <p>At Shree Vinayak Design, we complement you like your Trade Fair Partner. We begin with the fundamentals — assisting you with stall design suggestions relevant to your brand and industry — then decode your audience to create an exhibition stall that stands apart.</p>
-              </div>
-            )}
-            <button onClick={() => setReadMore(!readMore)} className="text-amber-600 font-semibold text-sm hover:underline">{readMore ? "Show Less ↑" : "Read More ↓"}</button>
-          </div>
-          <div className="relative">
-            <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=700&q=80" alt="Exhibition Design" className="rounded-xl shadow-2xl w-full object-cover h-80 md:h-[460px]" />
-            <div className="absolute -bottom-6 -left-6 bg-gold text-white p-6 rounded-xl shadow-xl">
-              <div className="font-display text-3xl font-bold">27+</div>
-              <div className="text-sm mt-0.5">Years of Excellence</div>
+      {/* ABOUT INTRO */}
+      <section className="section">
+        <div className="container">
+          <div className="grid-2">
+            <div>
+              <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=700&q=80" alt="About" style={{ borderRadius: "8px", width: "100%", height: "420px", objectFit: "cover" }} />
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════
-          CLIENTS — with images + marquee
-      ═══════════════════════════════════════ */}
-     <section className="bg-gray-50 py-20 relative overflow-hidden">
-        {/* Large ghost watermark "ESTEEMED" — matches site's dark/neutral palette */}
-        <div className="absolute top-0 left-0 right-0 flex justify-center pointer-events-none select-none" style={{ paddingTop: "8px" }}>
-          <span className="font-display font-black uppercase text-center leading-none"
-            style={{
-              fontSize: "clamp(70px, 14vw, 150px)",
-              letterSpacing: "0.1em",
-              color: "rgba(100,100,100,0.07)",
-              lineHeight: 1,
-            }}>
-            ESTEEMED
-          </span>
-        </div>
- 
-        <div className="relative z-10 max-w-5xl mx-auto px-6">
-          {/* "CLIENTS" gold heading */}
-          <div className="text-center mb-4" style={{ paddingTop: "40px" }}>
-            <p className="section-tag mb-3">Esteemed Clients</p>
-            <h2 className="font-display font-black uppercase"
-              style={{ fontSize: "clamp(30px, 5vw, 52px)", color: "#c8a84b", letterSpacing: "0.2em", lineHeight: 1 }}>
-              CLIENTS
-            </h2>
-          </div>
-          <p className="text-center font-semibold text-gray-700 mb-14" style={{ fontSize: "15px" }}>
-            Trusted by Industry-Leading Clients
-          </p>
- 
-          {/* Row 1 — 5 logos */}
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-12 items-center justify-items-center mb-12">
-            {[
-              { name: "Welspun Living",  logo: "https://logo.clearbit.com/welspunliving.com",  fallbackText: "Welspun Living",  fallbackColor: "#1a2d8b", bg: "", initials: "" },
-              { name: "Ador",            logo: "https://logo.clearbit.com/adorwelding.com",     fallbackText: "ador",            fallbackColor: "#d93311", bg: "", initials: "" },
-              { name: "DuPont",          logo: "https://logo.clearbit.com/dupont.com",           fallbackText: "◄DUPONT►",        fallbackColor: "#cc0000", bg: "", initials: "" },
-              { name: "L&T",             logo: "https://logo.clearbit.com/larsentoubro.com",     fallbackText: "L&T",             fallbackColor: "#005ea8", bg: "", initials: "" },
-              { name: "Godrej",          logo: "https://logo.clearbit.com/godrej.com",           fallbackText: "Godrej",          fallbackColor: "#8b1a8c", bg: "", initials: "" },
-            ].map((c, i) => <LogoTile key={i} client={c} />)}
-          </div>
- 
-          {/* Row 2 — 5 logos */}
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-12 items-center justify-items-center mb-16">
-            {[
-              { name: "AIS Glass",       logo: "https://logo.clearbit.com/aisglass.com",        fallbackText: "◇ AIS ◇",         fallbackColor: "#c0392b", bg: "", initials: "" },
-              { name: "Montanari",       logo: "https://logo.clearbit.com/montanari-group.com", fallbackText: "Montanari Group", fallbackColor: "#444", bg: "", initials: "" },
-              { name: "Johnson Lifts",   logo: "https://logo.clearbit.com/johnsonlifts.com",    fallbackText: "Johnson Lifts",   fallbackColor: "#005b99", bg: "", initials: "" },
-              { name: "Lafit",           logo: "https://logo.clearbit.com/lafit.in",             fallbackText: "LAFIT",           fallbackColor: "#4a9e20", bg: "", initials: "" },
-              { name: "Cathay Cargo",    logo: "https://logo.clearbit.com/cathaycargo.com",     fallbackText: "CATHAY CARGO",    fallbackColor: "#005f6a", bg: "", initials: "" },
-            ].map((c, i) => <LogoTile key={i} client ={c} />)}
-          </div>
- 
-          {/* Pill CTA — gold matches site theme */}
-          <div className="text-center">
-            <a href="#" className="bg-gold text-white font-semibold px-12 py-3.5 hover:bg-amber-600 transition-colors inline-block"
-              style={{ borderRadius: "999px", fontSize: "14px" }}>
-              View More
-            </a>
+            <div>
+              <p className="section-label">About Shree Vinayak Designs</p>
+              <div className="divider left" />
+              <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 700, lineHeight: 1.25, margin: "0 0 20px" }}>
+                India's Premier Exhibition Stall Design Company
+              </h2>
+              <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.8, marginBottom: "16px" }}>
+                Based in Delhi, Shree Vinayak Designs is a unique resource-based exhibition company offering a comprehensive range of services — from planning and stall design to event management, office branding, and digital communication.
+              </p>
+              <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.8, marginBottom: "28px" }}>
+                With extensive experience, we have expanded our services to include domestic and international markets including Germany, USA, and UAE, serving 500+ brands with excellence and consistency.
+              </p>
+              <Link to="/about" className="btn-gold">Know More</Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* SERVICES */}
-      <section id="expos" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <p className="section-tag mb-3">Our Services</p>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-gray-900">Comprehensive Branding Boost</h2>
+      <section className="section gray">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <p className="section-label">What We Do</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 700 }}>Explore Our Services</h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid-3">
             {SERVICES.map(s => (
-              <div key={s.title} className="card-hover bg-gray-50 rounded-xl p-8 border border-gray-100 cursor-pointer group">
-                <div className="text-4xl mb-5">{s.icon}</div>
-                <h3 className="font-display text-xl font-bold text-gray-900 mb-3 group-hover:text-amber-600 transition-colors">{s.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{s.desc}</p>
+              <div key={s.title} className="svc-card">
+                <div className="svc-icon">{s.icon}</div>
+                <h3 className="fd" style={{ fontSize: "18px", fontWeight: 700, marginBottom: "10px" }}>{s.title}</h3>
+                <p style={{ color: "#666", fontSize: "13px", lineHeight: 1.75, marginBottom: "16px" }}>{s.desc}</p>
+                <Link to="/services" style={{ fontSize: "13px", color: "#c8a84b", fontWeight: 600 }}>Read More →</Link>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════
-          EXHIBITION HIGHLIGHTS — with images & details
-      ═══════════════════════════════════════ */}
-      <section className="py-24" style={{ background: "#0d0d0d" }}>
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-8">
-            <p className="section-tag mb-2">Exhibition Stall Design that Impress</p>
-            <h2 className="font-display text-4xl font-bold text-white mb-3">Creative Exhibition Stall Highlights</h2>
-            <p className="text-gray-400 text-sm max-w-lg mx-auto">From Mumbai to Germany, our stalls have made lasting impressions at the worlds most prestigious trade fairs.</p>
-          </div>
-
-          {/* Filter */}
-          <div className="flex flex-wrap gap-3 justify-center mb-10">
-            {["All", "Domestic", "International"].map(f => (
-              <button key={f} onClick={() => setHighlightFilter(f)}
-                className={`px-5 py-1.5 rounded-full text-sm font-semibold border transition-all ${highlightFilter === f ? "bg-gold text-white border-transparent" : "border-white/20 text-gray-400 hover:border-amber-400 hover:text-amber-400"}`}>
-                {f}
-              </button>
-            ))}
-          </div>
-
-          {/* Grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {filteredHighlights.map((h, i) => (
-              <div key={i} className="hl-card" style={{ height: "310px" }}>
-                <img src={h.img} alt={h.expo} />
-                <div className="hl-overlay" />
-                <span className="absolute top-3 left-3 bg-gold text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">{h.tag}</span>
-                <span className="absolute top-3 right-3 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>{h.size}</span>
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-amber-400 text-[10px] font-bold tracking-widest uppercase">{h.location}</span>
-                    <span className="w-1 h-1 rounded-full bg-amber-400 inline-block" />
-                    <span className="text-white/50 text-[10px]">{h.size}</span>
-                  </div>
-                  <h3 className="font-display font-bold text-white text-lg leading-tight mb-2">{h.expo}</h3>
-                  <p className="hl-desc text-gray-300 text-xs leading-relaxed">{h.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Wide feature strip */}
-          <div className="hl-card" style={{ height: "200px" }}>
-            <img src="https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1600&q=80" alt="Anuga" />
-            <div className="hl-overlay" />
-            <span className="absolute top-4 left-4 bg-gold text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">International</span>
-            <span className="absolute top-4 right-4 text-white text-[10px] font-semibold px-3 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>108 SQM + Mezzanine</span>
-            <div className="absolute bottom-0 left-0 right-0 p-6 flex items-end justify-between">
-              <div>
-                <span className="text-amber-400 text-xs font-bold tracking-widest uppercase">Mumbai, India</span>
-                <h3 className="font-display font-bold text-white text-2xl mt-1">Anuga — Premium Food & Beverage Exhibition</h3>
-              </div>
-              <p className="hl-desc text-gray-300 text-sm max-w-sm hidden md:block">A landmark 108 SQM + mezzanine stall showcasing culinary innovation at Indias most prestigious food trade fair.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* DELIVERING EXCELLENCE */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <img src="https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=700&q=80" alt="Excellence" className="rounded-xl shadow-xl w-full object-cover h-[420px]" />
-          </div>
-          <div>
-            <p className="section-tag mb-3">From Layout to Light</p>
-            <h2 className="font-display text-4xl font-bold text-gray-900 mb-10 leading-tight">Delivering Excellence<br />at Every Step</h2>
-            <div className="space-y-8">
-              {[
-                { title: "Experienced and Professional", desc: "27 years of colossal experience backed by professionals who leave no stone unturned in meeting your requirements." },
-                { title: "Innovative Marketing Ideas", desc: "With our finger on the market pulse, we offer innovative ideas that attract and engage customers at your stall." },
-                { title: "Peace of Mind", desc: "From design approvals to travel arrangements, brochures, leaflets, and corporate gifts — we handle everything." },
-              ].map(item => (
-                <div key={item.title} className="flex gap-5">
-                  <div className="w-10 h-10 bg-gold rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-lg">✓</div>
-                  <div>
-                    <h3 className="font-display font-bold text-lg text-gray-900 mb-1">{item.title}</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
+      {/* PORTFOLIO GLIMPSE */}
+      <section className="section">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "32px" }}>
+            <p className="section-label">Exhibition</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 700, marginBottom: "24px" }}>Glimpses of Our Stalls</h2>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+              {["All", "Domestic", "International", "Mezzanine"].map(f => (
+                <button key={f} onClick={() => setFilter(f)}
+                  style={{ padding: "7px 20px", borderRadius: "20px", border: `1px solid ${filter === f ? "#c8a84b" : "#ddd"}`, background: filter === f ? "#c8a84b" : "#fff", color: filter === f ? "#fff" : "#555", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  {f}
+                </button>
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* PORTFOLIO */}
-      <section id="portfolio" className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="section-tag mb-3">PORTFOLIO – Bold. Distinctive. Disruptive</p>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-gray-900">Exhibition Masterpieces</h2>
-          </div>
-          <div className="flex flex-wrap gap-3 justify-center mb-10">
-            {["All", "Domestic", "International", "Mezzanine"].map(f => (
-              <button key={f} onClick={() => setActiveFilter(f)}
-                className={`px-5 py-2 rounded-full text-sm font-semibold border transition-all ${activeFilter === f ? "bg-gold text-white border-gold" : "bg-white text-gray-700 border-gray-200 hover:border-amber-400"}`}>
-                {f}
-              </button>
-            ))}
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPortfolio.map((p, i) => (
-              <div key={i} className="card-hover rounded-xl overflow-hidden shadow-md bg-white cursor-pointer group">
-                <div className="relative overflow-hidden h-52">
-                  <img src={p.img} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-3 right-3 bg-gold text-white text-xs font-semibold px-3 py-1 rounded-full">{p.tag}</div>
-                </div>
-                <div className="p-6">
-                  <h3 className="font-display font-bold text-lg text-gray-900 mb-2 group-hover:text-amber-600 transition-colors">{p.title}</h3>
-                  <p className="text-gray-500 text-sm">{p.desc}</p>
+          <div className="grid-3">
+            {filtered.map((p, i) => (
+              <div key={i} className="port-card">
+                <img src={p.img} alt={p.title} />
+                <div className="port-overlay">
+                  <span style={{ fontSize: "10px", background: "#c8a84b", color: "#fff", padding: "3px 10px", borderRadius: "20px", fontWeight: 700, letterSpacing: "0.1em", marginBottom: "6px", display: "inline-block" }}>{p.tag}</span>
+                  <h3 style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontSize: "16px", fontWeight: 700 }}>{p.title}</h3>
                 </div>
               </div>
             ))}
           </div>
-          <div className="text-center mt-10">
-            <a href="#" className="bg-gold text-white px-8 py-3 font-semibold rounded hover:bg-amber-600 transition-colors inline-block">View More</a>
+          <div style={{ textAlign: "center", marginTop: "36px" }}>
+            <Link to="/portfolio" className="btn-gold">View More</Link>
           </div>
         </div>
       </section>
 
-      {/* AWARD */}
-      <section id="awards" className="py-20 bg-gray-950 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-80 h-80 rounded-full bg-amber-400 blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full bg-amber-600 blur-3xl" />
-        </div>
-        <div className="relative z-10 text-center max-w-3xl mx-auto px-6">
-          <p className="section-tag mb-4">RECEIVED</p>
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4 leading-tight">The Grand Stand Award<br />at the Acetech Exhibition<br />in Ahmedabad</h2>
-          <a href="#" className="mt-6 inline-block border border-gold text-amber-400 px-8 py-3 font-semibold text-sm rounded hover:bg-gold hover:text-white transition-colors">To Know More</a>
+      {/* CLIENTS MARQUEE */}
+      <section className="section gray">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "40px" }}>
+            <p className="section-label">Our Clients</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 700 }}>Trusted by Industry Leaders</h2>
+          </div>
+          <div className="marquee-wrap">
+            <div className="marquee-track">
+              {[...CLIENTS_ROW1, ...CLIENTS_ROW1].map((c, i) => <ClientLogo key={i} name={c.name} logo={c.logo} />)}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* REVIEWS */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="section-tag mb-3">Our Clients</p>
-            <h2 className="font-display text-4xl font-bold text-gray-900 mb-4">Our Brand Ambassadors</h2>
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-4xl font-display font-bold text-gray-900">4.8</span>
-              <div>
-                <StarRating count={5} />
-                <div className="text-xs text-gray-500 mt-1">Based on 53 reviews</div>
-              </div>
-            </div>
+      <section className="section">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <p className="section-label">Client Feedback</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 700 }}>What Our Clients Say</h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid-3">
             {REVIEWS.map((r, i) => (
-              <div key={i} className="bg-gray-50 rounded-xl p-6 border border-gray-100 card-hover">
-                <StarRating count={r.rating} />
-                <p className="text-gray-700 text-sm leading-relaxed mt-3 mb-5">{r.text}</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm">{r.name[0]}</div>
+              <div key={i} style={{ padding: "28px", border: "1px solid #eee", borderRadius: "8px", background: "#fff" }}>
+                <Stars count={r.rating} />
+                <p style={{ color: "#555", fontSize: "14px", lineHeight: 1.8, margin: "14px 0 18px" }}>"{r.text}"</p>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#c8a84b", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700 }}>{r.name[0]}</div>
                   <div>
-                    <div className="font-semibold text-sm text-gray-900">{r.name}</div>
-                    <div className="text-xs text-gray-500">{r.date}</div>
+                    <div style={{ fontWeight: 700, fontSize: "14px" }}>{r.name}</div>
+                    <div style={{ fontSize: "12px", color: "#aaa" }}>{r.date}</div>
                   </div>
                 </div>
               </div>
@@ -546,192 +624,463 @@ export default function ShreeVinayakDesign() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════
-          FAQ — Redesigned dark attractive layout
-      ═══════════════════════════════════════ */}
-      <section className="py-24" style={{ background: "linear-gradient(135deg,#0f0f0f 0%,#1a1818 60%,#111 100%)" }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <p className="section-tag mb-3">Got Questions?</p>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-3">
-              Frequently Asked <span className="gold">Questions</span>
-            </h2>
-            <p className="text-gray-400 text-sm max-w-lg mx-auto">Everything you need to know about working with Shree Vinayak Design — from design to dismantling.</p>
+      {/* FAQ */}
+      <section className="section gray">
+        <div className="container" style={{ maxWidth: "780px" }}>
+          <div style={{ textAlign: "center", marginBottom: "40px" }}>
+            <p className="section-label">FAQ</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 700 }}>Frequently Asked Questions</h2>
           </div>
+          {FAQS.map((f, i) => (
+            <div key={i} className="faq-item">
+              <button className={`faq-q${openFaq === i ? " open" : ""}`} onClick={() => setOpenFaq((current) => (current === i ? null : i))}>
+                {f.q} <span style={{ fontSize: "20px", lineHeight: 1 }}>{openFaq === i ? "−" : "+"}</span>
+              </button>
+              {openFaq === i && <div className="faq-a">{f.a}</div>}
+            </div>
+          ))}
+        </div>
+      </section>
 
-          <div className="grid lg:grid-cols-5 gap-10 items-start">
-            {/* Left sticky panel */}
-            <div className="hidden lg:block lg:col-span-2 sticky top-28">
-              <div className="rounded-2xl overflow-hidden mb-5" style={{ height: "240px" }}>
-                <img src="https://images.unsplash.com/photo-1561489401-fc2876ced162?w=500&q=80" alt="FAQ" className="w-full h-full object-cover" />
-              </div>
-              {/* Stats mini */}
-              <div className="grid grid-cols-2 gap-3 mb-5">
-                {[{ v: "27+", l: "Years" }, { v: "2700+", l: "Stalls" }, { v: "500+", l: "Clients" }, { v: "20+", l: "Awards" }].map(s => (
-                  <div key={s.l} className="rounded-xl p-4 text-center" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <div className="font-display text-2xl font-bold gold">{s.v}</div>
-                    <div className="text-gray-400 text-xs mt-0.5">{s.l}</div>
+      {/* CTA BANNER */}
+      <section style={{ background: "#c8a84b", padding: "60px 0", textAlign: "center" }}>
+        <div className="container">
+          <h2 className="fd" style={{ color: "#fff", fontSize: "clamp(24px,3.5vw,38px)", fontWeight: 700, marginBottom: "12px" }}>
+            Ready to Make an Impact at Your Next Exhibition?
+          </h2>
+          <p style={{ color: "rgba(255,255,255,0.85)", marginBottom: "28px", fontSize: "15px" }}>Let's build something extraordinary together.</p>
+          <button className="btn-outline" style={{ borderColor: "#fff", color: "#fff" }} onClick={() => setEnquiryOpen(true)}>Get in Touch</button>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   PAGE: ABOUT
+═══════════════════════════════════════════ */
+function AboutPage() {
+  return (
+    <>
+      <PageBanner title="About Us" crumb="About Us" />
+
+      {/* 1. WELCOME */}
+      <section className="section">
+        <div className="container">
+          <div className="grid-2">
+            <div>
+              <p className="section-label">Welcome</p>
+              <div className="divider left" />
+              <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 700, lineHeight: 1.25, marginBottom: "20px" }}>
+                Welcome to Shree Vinayak Designs
+              </h2>
+              <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.9, marginBottom: "16px" }}>
+                "If your actions inspire others to dream more, learn more, do more, and become more, you are a leader." With this simple thought in mind and driven by the motto <strong style={{ color: "#111" }}>"Creativity, Designing and Fabrication"</strong>, Shree Vinayak Designs has rapidly established itself as a growth leader in the exhibition industry in India.
+              </p>
+              <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.9, marginBottom: "16px" }}>
+                The pride of being the team in India too have under the umbrella of an experienced team — all this is aimed toward creating sustainable creative stalls and workplaces which are ecologically friendly.
+              </p>
+              <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.9, marginBottom: "24px" }}>
+                Shree Vinayak Designs is perhaps one of its kind — the only company that handles stall Designing in one hand and Fabrication & Dismantling in another. Our consistent quality services and results will nurture your trust in our company, resulting in growth for both companies.
+              </p>
+              <div style={{ display: "flex", gap: "28px", flexWrap: "wrap" }}>
+                {[["500+", "Happy Clients"], ["100%", "Custom Design"], ["360°", "Services"]].map(([v, l]) => (
+                  <div key={l} style={{ textAlign: "center" }}>
+                    <div className="fd gold" style={{ fontSize: "28px", fontWeight: 700 }}>{v}</div>
+                    <div style={{ fontSize: "12px", color: "#888", marginTop: "2px" }}>{l}</div>
                   </div>
                 ))}
               </div>
-              <div className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <h3 className="font-display text-lg text-white font-bold mb-2">Still have questions?</h3>
-                <p className="text-gray-400 text-sm mb-5 leading-relaxed">Our team is happy to guide you through every detail of the process.</p>
-                <a href="tel:+918879636752" className="flex items-center justify-center gap-2 bg-gold text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-amber-600 transition-colors w-full mb-3">
-                  📞 Call Us Now
-                </a>
-                <a href="mailto: shreevinayakdesigns@gmail.com" className="flex items-center justify-center gap-2 text-gray-300 px-5 py-2.5 rounded-xl font-semibold text-sm hover:text-amber-400 transition-colors w-full" style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
-                  ✉️ Email Us
-                </a>
+            </div>
+            <div style={{ position: "relative" }}>
+              <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=700&q=80" alt="Welcome" style={{ borderRadius: "8px", width: "100%", height: "430px", objectFit: "cover" }} />
+              <div style={{ position: "absolute", bottom: "-16px", left: "-16px", background: "#c8a84b", color: "#fff", padding: "18px 24px", borderRadius: "6px", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
+                <div className="fd" style={{ fontSize: "13px", fontStyle: "italic", maxWidth: "200px", lineHeight: 1.6 }}>
+                  "Creativity, Designing and Fabrication"
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. ABOUT COMPANY */}
+      <section className="section gray">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <p className="section-label">About the Company</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 700 }}>Who We Are</h2>
+          </div>
+          <div className="grid-2">
+            <div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                {[
+                  "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=400&q=80",
+                  "https://images.unsplash.com/photo-1561489401-fc2876ced162?w=400&q=80",
+                  "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=400&q=80",
+                  "https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&q=80",
+                ].map((src, i) => (
+                  <img key={i} src={src} alt="Company" style={{ borderRadius: "6px", width: "100%", height: "185px", objectFit: "cover" }} />
+                ))}
+              </div>
+            </div>
+            <div>
+              <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.9, marginBottom: "16px" }}>
+                Shree Vinayak Designs is an organization that provides services related to <strong style={{ color: "#111" }}>Stall Designing, Stall Fabrication, Installation, and Dismantling Services</strong> for their Clients.
+              </p>
+              <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.9, marginBottom: "16px" }}>
+                The organization has grown on the premise that nothing beats our personalized service, experience, and attention to detail. In the Exhibition Industry, Shree Vinayak Designs is dedicated to adding significant value to exhibition & Stall Designing. Our prime concern is to enhance our client's business through our services.
+              </p>
+              <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.9, marginBottom: "24px" }}>
+                As a group of teams working side by side, we aspire for a luxurious and creative stall Designing — a place where creativity and fabrication are all equal and integrated organically. We work with the belief that <strong style={{ color: "#111" }}>process and collaboration should be as exciting and fun as the result.</strong>
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {["Stall Designing", "Stall Fabrication", "Installation", "Dismantling", "Creative & Unique"].map(t => (
+                  <span key={t} style={{ fontSize: "12px", fontWeight: 600, padding: "5px 14px", border: "1px solid #c8a84b", color: "#c8a84b", borderRadius: "20px" }}>{t}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. HOW WE OPERATE */}
+      <section className="section">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <p className="section-label">Our Approach</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 700, marginBottom: "16px" }}>How We Operate</h2>
+            <p style={{ color: "#555", fontSize: "15px", lineHeight: 1.85, maxWidth: "720px", margin: "0 auto" }}>
+              The work approach is one of the prime factors that outstands us among other organizations in this league. Our professionals are thoroughly briefed about treating clients with care yet in a professional manner.
+            </p>
+          </div>
+          <div className="grid-4">
+            {[
+              { step: "01", icon: "🎯", title: "Client Consultation", desc: "We listen carefully to every client's vision, brand goals, and exhibition requirements before anything else." },
+              { step: "02", icon: "✏️", title: "Creative Design", desc: "Our design team crafts unique, creative stall concepts tailored specifically to attract and engage your buyers." },
+              { step: "03", icon: "🔨", title: "Fabrication", desc: "We handle end-to-end stall fabrication within our specialized facility, maintaining the highest quality standards." },
+              { step: "04", icon: "🏁", title: "Installation & Dismantling", desc: "Our expert team manages complete on-site installation and post-event dismantling — hassle-free for you." },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign: "center", padding: "36px 22px", border: "1px solid #eee", borderRadius: "8px", position: "relative", background: "#fff", transition: "box-shadow 0.2s" }}>
+                <div style={{ position: "absolute", top: "12px", right: "14px", fontFamily: "'Playfair Display',serif", fontSize: "40px", fontWeight: 900, color: "rgba(200,168,75,0.1)", lineHeight: 1 }}>{s.step}</div>
+                <div style={{ fontSize: "36px", marginBottom: "16px" }}>{s.icon}</div>
+                <h3 className="fd" style={{ fontSize: "17px", fontWeight: 700, marginBottom: "10px" }}>{s.title}</h3>
+                <p style={{ color: "#666", fontSize: "13px", lineHeight: 1.8 }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. VISION & 5. MISSION */}
+      <section className="section gray">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <p className="section-label">Our Purpose</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 700 }}>Vision & Mission</h2>
+          </div>
+          <div className="grid-2" style={{ marginBottom: "40px" }}>
+            {/* VISION */}
+            <div className="card">
+              <div style={{ position: "relative", height: "200px", overflow: "hidden" }}>
+                <img src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=700&q=80" alt="Vision" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)" }} />
+                <div style={{ position: "absolute", bottom: "16px", left: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ width: "38px", height: "38px", background: "#c8a84b", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>🔭</div>
+                  <span className="fd" style={{ color: "#fff", fontSize: "22px", fontWeight: 700 }}>Our Vision</span>
+                </div>
+              </div>
+              <div style={{ padding: "28px" }}>
+                <p style={{ color: "#555", fontSize: "14px", lineHeight: 1.9 }}>
+                  Our vision is to become a leading service-providing company in Stall Fabrication and to nurture the thought of stall designing through spreading <strong style={{ color: "#111" }}>Creative ideas, distinctive work services, and innovation.</strong>
+                </p>
               </div>
             </div>
 
-            {/* FAQ accordion */}
-            <div className="lg:col-span-3 space-y-3">
-              {FAQS.map((faq, i) => {
-                const isOpen = expandedFaq === i;
-                return (
-                  <div key={i}
-                    onClick={() => setExpandedFaq(isOpen ? null : i)}
-                    className="rounded-xl cursor-pointer transition-all duration-300"
-                    style={{
-                      border: isOpen ? "1px solid rgba(200,168,75,0.45)" : "1px solid rgba(255,255,255,0.08)",
-                      borderLeft: isOpen ? "3px solid #c8a84b" : "3px solid transparent",
-                      background: isOpen ? "rgba(200,168,75,0.07)" : "rgba(255,255,255,0.03)"
-                    }}>
-                    <div className="flex items-center gap-4 px-5 py-4">
-                      {/* Icon bubble */}
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-base transition-colors"
-                        style={{ background: isOpen ? "rgba(200,168,75,0.18)" : "rgba(255,255,255,0.06)" }}>
-                        {faq.icon}
-                      </div>
-                      <span className={`font-semibold text-sm flex-1 leading-snug transition-colors ${isOpen ? "text-amber-400" : "text-white"}`}>{faq.q}</span>
-                      <div className={`faq-plus w-7 h-7 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0 transition-all ${isOpen ? "open" : ""}`}
-                        style={{
-                          background: isOpen ? "#c8a84b" : "rgba(255,255,255,0.08)",
-                          color: isOpen ? "#fff" : "#999"
-                        }}>
-                        +
-                      </div>
-                    </div>
-                    <div className={`faq-body ${isOpen ? "open" : ""}`}>
-                      <div className="px-5 pb-5" style={{ paddingLeft: "72px" }}>
-                        <p className="text-gray-300 text-sm leading-relaxed">{faq.a}</p>
-                      </div>
+            {/* MISSION */}
+            <div className="card">
+              <div style={{ position: "relative", height: "200px", overflow: "hidden" }}>
+                <img src="https://images.unsplash.com/photo-1487017159836-4e23ece2e4cf?w=700&q=80" alt="Mission" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)" }} />
+                <div style={{ position: "absolute", bottom: "16px", left: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ width: "38px", height: "38px", background: "#111", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>🚀</div>
+                  <span className="fd" style={{ color: "#fff", fontSize: "22px", fontWeight: 700 }}>Our Mission</span>
+                </div>
+              </div>
+              <div style={{ padding: "28px" }}>
+                <p style={{ color: "#555", fontSize: "14px", lineHeight: 1.9 }}>
+                  Our mission is to satisfy every client & member's need for a better experience through quality service. We are committed to <strong style={{ color: "#111" }}>adding value to our client's name and changing lives through our remarkable services.</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* CORE VALUES */}
+          <div style={{ textAlign: "center", marginBottom: "28px" }}>
+            <p className="section-label">What We Stand For</p>
+            <div className="divider" />
+            <h3 className="fd" style={{ fontSize: "clamp(22px,3vw,32px)", fontWeight: 700 }}>Our Core Values</h3>
+          </div>
+          <div className="grid-4">
+            {[
+              { icon: "🌟", title: "Deliver WOW Through Service", desc: "We go above and beyond to create experiences that truly wow our clients at every touchpoint." },
+              { icon: "💡", title: "Be Creative & Open-Minded", desc: "We embrace fresh thinking, bold ideas, and an open mind to every challenge we face." },
+              { icon: "📈", title: "Pursue Growth & Learning", desc: "We are committed to continuous improvement — for ourselves, our team, and our clients." },
+              { icon: "🤝", title: "Open & Honest Relationships", desc: "We build transparent, communicative relationships that stand the test of time." },
+              { icon: "👨‍👩‍👧", title: "Positive Team & Family Spirit", desc: "We foster a supportive, collaborative environment where everyone thrives together." },
+              { icon: "⚡", title: "Do More With Less", desc: "We deliver maximum value through smart, efficient processes and resourceful thinking." },
+              { icon: "🔥", title: "Be Passionate & Determined", desc: "Every project gets our full passion and determination — no matter the size or scope." },
+              { icon: "🙏", title: "Be Humble", desc: "We stay grounded, listen actively, and never stop learning from our clients and team." },
+            ].map(v => (
+              <div key={v.title} style={{ textAlign: "center", padding: "24px 18px", border: "1px solid #eee", borderRadius: "8px", background: "#fff" }}>
+                <div style={{ fontSize: "28px", marginBottom: "10px" }}>{v.icon}</div>
+                <h4 className="fd" style={{ fontWeight: 700, fontSize: "14px", marginBottom: "8px", color: "#111" }}>{v.title}</h4>
+                <p style={{ color: "#777", fontSize: "12px", lineHeight: 1.7 }}>{v.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   PAGE: SERVICES
+═══════════════════════════════════════════ */
+function ServicesPage({ setEnquiryOpen }: { setEnquiryOpen: (value: boolean) => void }) {
+  return (
+    <>
+      <PageBanner title="Our Services" crumb="Services" />
+      <section className="section">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <p className="section-label">What We Offer</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 700 }}>Comprehensive Branding Solutions</h2>
+            <p style={{ color: "#777", fontSize: "14px", marginTop: "10px", maxWidth: "520px", margin: "10px auto 0" }}>From concept to completion — every service you need to make your brand shine at any exhibition.</p>
+          </div>
+          <div className="grid-3">
+            {SERVICES.map((s, i) => (
+              <div key={i} className="svc-card" style={{ textAlign: "center" }}>
+                <div className="svc-icon">{s.icon}</div>
+                <h3 className="fd" style={{ fontSize: "18px", fontWeight: 700, marginBottom: "12px" }}>{s.title}</h3>
+                <p style={{ color: "#666", fontSize: "13px", lineHeight: 1.8 }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why choose */}
+      <section className="section gray">
+        <div className="container">
+          <div className="grid-2">
+            <div>
+              <p className="section-label">Why Choose Us</p>
+              <div className="divider left" />
+              <h2 className="fd" style={{ fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, marginBottom: "24px" }}>Delivering Excellence at Every Step</h2>
+              {[
+                { icon: "🏆", title: "27+ Years of Experience", desc: "Decades of expertise across 50+ industry verticals, delivering flawless stalls consistently." },
+                { icon: "🎨", title: "In-house Design Studio", desc: "Our creative team produces photorealistic 3D renders before any fabrication begins." },
+                { icon: "🔧", title: "Own Fabrication Unit", desc: "We own our fabrication facility, giving us full quality control and faster turnaround." },
+                { icon: "🌍", title: "International Reach", desc: "Successfully executed projects in Germany, USA, UAE, and across Asia." },
+              ].map(item => (
+                <div key={item.title} style={{ display: "flex", gap: "14px", marginBottom: "20px", alignItems: "flex-start" }}>
+                  <div style={{ fontSize: "22px", flexShrink: 0, marginTop: "2px" }}>{item.icon}</div>
+                  <div>
+                    <div style={{ fontWeight: 700, marginBottom: "4px" }}>{item.title}</div>
+                    <div style={{ color: "#666", fontSize: "13px", lineHeight: 1.7 }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+              <button className="btn-gold" style={{ marginTop: "8px" }} onClick={() => setEnquiryOpen(true)}>Get a Quote</button>
+            </div>
+            <div>
+              <img src="https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=700&q=80" alt="Services" style={{ borderRadius: "8px", width: "100%", height: "440px", objectFit: "cover" }} />
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   PAGE: PORTFOLIO
+═══════════════════════════════════════════ */
+function PortfolioPage() {
+  const [filter, setFilter] = useState("All");
+  const allItems = [
+    ...PORTFOLIO,
+    { title: "Aahar Food Expo", tag: "Domestic", img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80" },
+    { title: "Smart Lift India", tag: "Domestic", img: "https://images.unsplash.com/photo-1561489401-fc2876ced162?w=600&q=80" },
+    { title: "Bharat Tex 2024", tag: "Domestic", img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&q=80" },
+  ];
+  const filtered = filter === "All" ? allItems : allItems.filter(p => p.tag === filter);
+  return (
+    <>
+      <PageBanner title="Our Portfolio" crumb="Portfolio" />
+      <section className="section">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "32px" }}>
+            <p className="section-label">Our Work</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 700, marginBottom: "24px" }}>Exhibition Masterpieces</h2>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+              {["All", "Domestic", "International", "Mezzanine"].map(f => (
+                <button key={f} onClick={() => setFilter(f)}
+                  style={{ padding: "7px 20px", borderRadius: "20px", border: `1px solid ${filter === f ? "#c8a84b" : "#ddd"}`, background: filter === f ? "#c8a84b" : "#fff", color: filter === f ? "#fff" : "#555", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid-3">
+            {filtered.map((p, i) => (
+              <div key={i} className="port-card">
+                <img src={p.img} alt={p.title} />
+                <div className="port-overlay">
+                  <span style={{ fontSize: "10px", background: "#c8a84b", color: "#fff", padding: "3px 10px", borderRadius: "20px", fontWeight: 700, letterSpacing: "0.1em", marginBottom: "6px", display: "inline-block" }}>{p.tag}</span>
+                  <h3 style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontSize: "16px", fontWeight: 700 }}>{p.title}</h3>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Clients in portfolio page */}
+      <section className="section gray">
+        <div className="container">
+          <div style={{ textAlign: "center", marginBottom: "36px" }}>
+            <p className="section-label">Our Clients</p>
+            <div className="divider" />
+            <h2 className="fd" style={{ fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 700 }}>Brands We've Represented</h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "20px" }}>
+            {CLIENTS_ROW1.map((c, i) => (
+              <div key={i} style={{ background: "#fff", border: "1px solid #eee", borderRadius: "8px", height: "80px", display: "flex", alignItems: "center", justifyContent: "center", padding: "12px" }}>
+                <ClientLogo name={c.name} logo={c.logo} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   PAGE: CONTACT
+═══════════════════════════════════════════ */
+function ContactPage() {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
+  const [sent, setSent] = useState(false);
+  return (
+    <>
+      <PageBanner title="Contact Us" crumb="Contact" />
+      <section className="section">
+        <div className="container">
+          <div className="grid-2" style={{ gap: "56px" }}>
+            {/* Form */}
+            <div>
+              <p className="section-label">Get In Touch</p>
+              <div className="divider left" />
+              <h2 className="fd" style={{ fontSize: "clamp(24px,3vw,34px)", fontWeight: 700, marginBottom: "8px" }}>Send Us a Message</h2>
+              <p style={{ color: "#777", fontSize: "14px", marginBottom: "28px" }}>Fill in the form and our team will get back to you within 24 hours.</p>
+              {sent ? (
+                <div style={{ background: "#f0faf4", border: "1px solid #86efac", padding: "24px", borderRadius: "8px", textAlign: "center" }}>
+                  <div style={{ fontSize: "32px", marginBottom: "8px" }}>✅</div>
+                  <div style={{ fontWeight: 700, color: "#166534" }}>Message sent successfully!</div>
+                  <div style={{ color: "#555", fontSize: "13px", marginTop: "4px" }}>We'll get back to you within 24 hours.</div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                    <div className="form-group"><input placeholder="Your Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+                    <div className="form-group"><input placeholder="Email Address" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+                    <div className="form-group"><input placeholder="Phone Number" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+                    <div className="form-group"><input placeholder="Subject" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} /></div>
+                  </div>
+                  <div className="form-group"><textarea placeholder="Your Message" rows={5} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} style={{ resize: "none" }} /></div>
+                  <button className="btn-gold" style={{ width: "100%" }} onClick={() => setSent(true)}>Submit Message</button>
+                </>
+              )}
+            </div>
+
+            {/* Info */}
+            <div>
+              <p className="section-label">Our Offices</p>
+              <div className="divider left" />
+              <h2 className="fd" style={{ fontSize: "clamp(24px,3vw,34px)", fontWeight: 700, marginBottom: "24px" }}>Find Us Here</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "32px" }}>
+                {[
+                  { icon: "📍", title: "Corporate Office", info: "1/4886, Street No. 8, Balbir Nagar Extension, Shahdara, Delhi - 110032, India." },
+                  { icon: "📍", title: "Delhi Office", info: "1/4886, Street No. 8, Balbir Nagar Extension, Shahdara, Delhi - 110032, India." },
+                  { icon: "📞", title: "Phone", info: "+91-9999441619 / +91-9911619759" },
+                  { icon: "✉️", title: "Email", info: "shreevinayakdesigns@gmail.com" },
+                  { icon: "🕐", title: "Working Hours", info: "Mon – Sat: 9:00 AM – 7:00 PM" },
+                ].map(item => (
+                  <div key={item.title} className="info-box">
+                    <div className="info-icon">{item.icon}</div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "14px", marginBottom: "3px" }}>{item.title}</div>
+                      <div style={{ color: "#666", fontSize: "13px", lineHeight: 1.65 }}>{item.info}</div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* BLOGS */}
-      <section id="blogs" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <p className="section-tag mb-3">Knowledge Hub</p>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-gray-900">Latest Blogs</h2>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {BLOGS.map((b, i) => (
-              <div key={i} className="card-hover rounded-xl overflow-hidden shadow-md bg-white group cursor-pointer">
-                <div className="relative overflow-hidden h-48">
-                  <img src={b.img} alt={b.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <span className="absolute top-3 left-3 bg-gold text-white text-xs px-3 py-1 rounded-full font-medium">{b.tag}</span>
-                </div>
-                <div className="p-6">
-                  <p className="text-gray-400 text-xs mb-2">{b.date}</p>
-                  <h3 className="font-display font-bold text-base text-gray-900 leading-snug group-hover:text-amber-600 transition-colors">{b.title}</h3>
-                </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
+    </>
+  );
+}
 
-      {/* ASSOCIATIONS */}
-      <section className="py-16 bg-gray-50 border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="font-display text-3xl font-bold text-gray-900 mb-10">Associated With</h2>
-          <div className="flex flex-wrap justify-center gap-12">
-            {["KDO", "BNI", "SOBA"].map(a => (
-              <div key={a} className="flex items-center justify-center bg-white border border-gray-200 rounded-xl px-12 py-6 shadow-sm hover:shadow-md transition-shadow">
-                <span className="font-display text-xl font-bold text-gray-700">{a}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+/* ─────────────────────────────────────────
+   ROOT APP
+───────────────────────────────────────── */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 
-      {/* FOOTER */}
-      <footer id="contact" className="bg-gray-950 text-gray-300 pt-20 pb-8">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-14">
-          <div>
-            <div className="font-display font-bold text-2xl text-white mb-4">Shree Vinayak <span className="gold">Design</span></div>
-            <p className="text-sm text-gray-400 leading-relaxed mb-5">Award-winning exhibition stall design company serving major Indian brands since 1998.</p>
-            <div className="text-sm space-y-2">
-              <div><span className="text-amber-400 font-semibold">Tel:</span><a href="tel:+91-9999441619" className="hover:text-white"> +91 22 24183337</a></div>
-              <div><span className="text-amber-400 font-semibold">Mobile:</span><a href="tel:+91-9999441619" className="hover:text-white"> +91 88796 36752</a></div>
-              <div><span className="text-amber-400 font-semibold">Email:</span><a href="mailto:shreevinayakdesigns@gmail.com" className="hover:text-white"> shreevinayakdesigns@gmail.com</a></div>
-            </div>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold text-sm uppercase tracking-widest mb-5">Offices</h4>
-            <div className="space-y-4 text-sm text-gray-400">
-              <div><div className="text-amber-400 font-semibold mb-1">Corporate Office</div>Add 1/4886 Street No.8 Balbir Nagar Extension, Shahdara Delhi-110032.</div>
-              <div><div className="text-amber-400 font-semibold mb-1">Uttar Pradesh Office</div>86, Village Salarpur Noida, Gautambudha Nagar, Uttar Pradesh – 201301.</div>
-            </div>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold text-sm uppercase tracking-widest mb-5">Our Services</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              {["Exhibition Stall Design", "Exhibition Stall Fabrication", "Exhibition Stand Design", "Exhibition Booth Design", "Mezzanine Stall Designer", "Office Branding", "Retail Design"].map(s => (
-                <li key={s}><a href="#" className="hover:text-amber-400 transition-colors">→ {s}</a></li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold text-sm uppercase tracking-widest mb-5">Quick Links</h4>
-            <ul className="space-y-2 text-sm text-gray-400 mb-8">
-              {NAV_LINKS.map(l => (<li key={l.label}><a href={l.href} className="hover:text-amber-400 transition-colors">→ {l.label}</a></li>))}
-            </ul>
-            <button onClick={() => setEnquiryOpen(true)} className="bg-gold text-white px-6 py-3 rounded font-semibold text-sm hover:bg-amber-600 transition-colors w-full">Download Portfolio</button>
-          </div>
-        </div>
-        <div className="border-t border-white/10 pt-6 max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-gray-500">Shree Vinayak Design © 2026. Developed and Marketed by Shree Vinayak Design.</p>
-          <div className="flex gap-4">
-            {["Facebook", "Instagram", "LinkedIn", "YouTube"].map(s => (<a key={s} href="#" className="text-gray-500 hover:text-amber-400 text-xs transition-colors">{s}</a>))}
-          </div>
-        </div>
-      </footer>
+export default function App() {
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-      {/* ENQUIRY MODAL */}
-      {enquiryOpen && (
-        <div className="fixed inset-0 z-[200] bg-black/70 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative">
-            <button className="absolute top-4 right-5 text-gray-400 hover:text-gray-900 text-2xl" onClick={() => setEnquiryOpen(false)}>✕</button>
-            <h3 className="font-display text-2xl font-bold text-gray-900 mb-2">Submit Your Enquiry</h3>
-            <p className="text-gray-500 text-sm mb-6">Fill in the details below and we will get back to you promptly.</p>
-            <div className="space-y-4">
-              {[["name", "Your Name", "text"], ["email", "Email Address", "email"], ["phone", "Phone Number", "tel"]].map(([field, label, type]) => (
-                <input key={field} type={type} placeholder={label} value={form[field as keyof typeof form]}
-                  onChange={e => setForm({ ...form, [field]: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-amber-400" />
-              ))}
-              <textarea placeholder="Your Message" rows={4} value={form.message}
-                onChange={e => setForm({ ...form, message: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-amber-400 resize-none" />
-              <button onClick={() => setEnquiryOpen(false)} className="w-full bg-gold text-white py-3 rounded-lg font-semibold hover:bg-amber-600 transition-colors">Submit Enquiry</button>
-            </div>
-          </div>
-        </div>
+  return (
+    <Router>
+      <style>{GLOBAL_CSS}</style>
+      <ScrollToTop />
+      <Navbar enquiryOpen={enquiryOpen} setEnquiryOpen={setEnquiryOpen} />
+      <main style={{ paddingTop: 0 }}>
+        <Routes>
+          <Route path="/" element={<HomePage setEnquiryOpen={setEnquiryOpen} />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/services" element={<ServicesPage setEnquiryOpen={setEnquiryOpen} />} />
+          <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="*" element={<HomePage setEnquiryOpen={setEnquiryOpen} />} />
+        </Routes>
+      </main>
+      <Footer />
+      <EnquiryModal open={enquiryOpen} onClose={() => setEnquiryOpen(false)} />
+      {showTop && (
+        <button className="scroll-top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} title="Back to top">↑</button>
       )}
-
-      {/* FLOATING CALL */}
-      <a href="tel:+918879636752" className="fixed bottom-6 right-6 z-50 bg-gold text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-amber-600 transition-colors text-2xl" title="Call Us">📞</a>
-    </div>
+    </Router>
   );
 }
